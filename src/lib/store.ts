@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
   Subject, SubjectStatus, SpacedRepetitionItem, MockEntry,
-  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem,
+  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem, StudySession,
 } from './types';
 import { SEED_SUBJECTS, PHASES, SEED_CHEAT_SHEET_V2 } from './data';
 
@@ -55,6 +55,7 @@ const INITIAL_STATE = {
   mocks: [] as MockEntry[],
   checkIns: [] as BurnoutCheckIn[],
   cheatSheetItems: SEED_CHEAT_SHEET_V2,
+  studySessions: [] as StudySession[],
 };
 
 export const usePrepStore = create<PrepState>()(
@@ -213,6 +214,22 @@ export const usePrepStore = create<PrepState>()(
           ),
         })),
 
+      addStudySession: (session) =>
+        set((s) => ({
+          studySessions: [
+            ...s.studySessions,
+            {
+              ...session,
+              id: `ss-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            },
+          ],
+        })),
+
+      removeStudySession: (id) =>
+        set((s) => ({
+          studySessions: s.studySessions.filter((ss) => ss.id !== id),
+        })),
+
       resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2 }),
 
       loadFromMongo: (data) =>
@@ -225,6 +242,7 @@ export const usePrepStore = create<PrepState>()(
           mocks: data.mocks,
           checkIns: data.checkIns,
           cheatSheetItems: mergeCheatSheetItems(data.cheatSheetItems ?? []),
+          studySessions: data.studySessions ?? [],
         }),
     }),
     {
@@ -292,4 +310,21 @@ export function cheatSheetProgress(items: CheatSheetItem[]): { total: number; ma
   const total = items.length;
   const mastered = items.filter((i) => i.mastered).length;
   return { total, mastered, pct: total > 0 ? Math.round((mastered / total) * 100) : 0 };
+}
+
+export function todayStudyMinutes(sessions: StudySession[]): number {
+  const today = new Date().toISOString().slice(0, 10);
+  return sessions
+    .filter((s) => s.date === today)
+    .reduce((sum, s) => sum + s.durationMinutes, 0);
+}
+
+export function weekStudyMinutes(sessions: StudySession[]): number {
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString();
+  return sessions
+    .filter((s) => s.date >= weekAgoStr)
+    .reduce((sum, s) => sum + s.durationMinutes, 0);
 }

@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Target, TrendingUp, Flame, AlertTriangle, ArrowRight, Clock } from 'lucide-react';
-import { usePrepStore, overallCompletion, dueSRCount, recentMockAverage, getCurrentPhase } from '@/lib/store';
+import { Calendar, Target, TrendingUp, Flame, AlertTriangle, ArrowRight, Clock, Timer } from 'lucide-react';
+import { usePrepStore, overallCompletion, dueSRCount, recentMockAverage, getCurrentPhase, todayStudyMinutes, weekStudyMinutes } from '@/lib/store';
 import { PHASES, scoreToRank } from '@/lib/data';
 import { useMemo } from 'react';
 
@@ -14,7 +14,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onNavigate }: DashboardProps) {
-  const { subjects, srItems, mocks, gateDate, startDate } = usePrepStore();
+  const { subjects, srItems, mocks, gateDate, startDate, studySessions } = usePrepStore();
   const currentPhase = getCurrentPhase(startDate, gateDate);
 
   const completion = overallCompletion(subjects);
@@ -36,6 +36,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
   const phase = PHASES.find((p) => p.id === currentPhase)!;
 
+  const todayMin = todayStudyMinutes(studySessions);
+  const weekMin = weekStudyMinutes(studySessions);
+  const formatTime = (minutes: number) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
   // Weak subjects count
   const weakCount = subjects.filter((s) => s.status === 'weak').length;
   const p0Subjects = subjects.filter((s) => s.priority === 'P0');
@@ -43,7 +51,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   return (
     <div className="space-y-6">
       {/* Hero stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="border-emerald-200 dark:border-emerald-900 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-slate-950">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
@@ -102,6 +110,22 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
               {dueToday > 0 ? 'Reviews pending' : 'All caught up!'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Timer className="h-3.5 w-3.5" /> Study Time
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-slate-900 dark:text-slate-50">
+              {formatTime(todayMin)}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              {formatTime(weekMin)} this week
             </p>
           </CardContent>
         </Card>

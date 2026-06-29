@@ -13,7 +13,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { BookOpen, Plus, Trash2, ChevronDown, ChevronRight, Target } from 'lucide-react';
+import { BookOpen, Plus, Trash2, ChevronDown, ChevronRight, Target, AlertCircle } from 'lucide-react';
 import { usePrepStore } from '@/lib/store';
 import { PYQ_DISTRIBUTION } from '@/lib/data';
 import type { PYQAttempt } from '@/lib/types';
@@ -32,6 +32,7 @@ export function PYQTrackerView() {
   const [correct, setCorrect] = useState('0');
   const [wrong, setWrong] = useState('0');
   const [skipped, setSkipped] = useState('0');
+  const [formError, setFormError] = useState('');
 
   const subjectMap = useMemo(() => {
     const m = new Map(subjects.map((s) => [s.id, s]));
@@ -47,26 +48,21 @@ export function PYQTrackerView() {
     return totals;
   }, []);
 
-  // PYQs solved per subject
-  const subjectSolved = useMemo(() => {
+  // PYQs solved and correct per subject (single pass)
+  const { subjectSolved, subjectCorrect } = useMemo(() => {
     const solved: Record<string, number> = {};
-    for (const sid of SUBJECT_IDS) {
-      solved[sid] = pyqAttempts
-        .filter((a) => a.subjectId === sid)
-        .reduce((sum, a) => sum + a.solved, 0);
-    }
-    return solved;
-  }, [pyqAttempts]);
-
-  // PYQs correct per subject
-  const subjectCorrect = useMemo(() => {
     const correct: Record<string, number> = {};
     for (const sid of SUBJECT_IDS) {
-      correct[sid] = pyqAttempts
-        .filter((a) => a.subjectId === sid)
-        .reduce((sum, a) => sum + a.correct, 0);
+      solved[sid] = 0;
+      correct[sid] = 0;
     }
-    return correct;
+    for (const a of pyqAttempts) {
+      if (solved[a.subjectId] !== undefined) {
+        solved[a.subjectId] += a.solved;
+        correct[a.subjectId] += a.correct;
+      }
+    }
+    return { subjectSolved: solved, subjectCorrect: correct };
   }, [pyqAttempts]);
 
   const totalAvailable = Object.values(subjectTotals).reduce((a, b) => a + b, 0);
@@ -79,6 +75,11 @@ export function PYQTrackerView() {
     const w = parseInt(wrong, 10);
     const sk = parseInt(skipped, 10);
     if (isNaN(s) || s < 0) return;
+    if (isNaN(c) || c < 0) { setFormError('Correct must be a non-negative number'); return; }
+    if (isNaN(w) || w < 0) { setFormError('Wrong must be a non-negative number'); return; }
+    if (isNaN(sk) || sk < 0) { setFormError('Skipped must be a non-negative number'); return; }
+    if (c + w + sk > s) { setFormError('Correct + Wrong + Skipped cannot exceed Solved'); return; }
+    setFormError('');
 
     const year = parseInt(selYear, 10);
     const yearData = PYQ_DISTRIBUTION[selSubject]?.find((y) => y.year === year);
@@ -121,6 +122,7 @@ export function PYQTrackerView() {
     setCorrect(String(attempt.correct));
     setWrong(String(attempt.wrong));
     setSkipped(String(attempt.skipped));
+    setFormError('');
     setOpen(true);
   };
 
@@ -140,9 +142,17 @@ export function PYQTrackerView() {
                 Track solved previous year questions across all subjects
               </CardDescription>
             </div>
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setFormError(''); }}>
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" onClick={() => {
+                  setSelSubject(SUBJECT_IDS[0]);
+                  setSelYear('2025');
+                  setSolved('0');
+                  setCorrect('0');
+                  setWrong('0');
+                  setSkipped('0');
+                  setFormError('');
+                }}>
                   <Plus className="h-4 w-4 mr-1" /> Log PYQs
                 </Button>
               </DialogTrigger>
@@ -206,8 +216,14 @@ export function PYQTrackerView() {
                     </div>
                   </div>
                 </div>
+                {formError && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                    <AlertCircle className="h-4 w-4" />
+                    {formError}
+                  </div>
+                )}
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                  <Button variant="outline" onClick={() => { setOpen(false); setFormError(''); }}>Cancel</Button>
                   <Button onClick={handleAdd}>Save</Button>
                 </DialogFooter>
               </DialogContent>
@@ -283,6 +299,7 @@ export function PYQTrackerView() {
                             setCorrect('0');
                             setWrong('0');
                             setSkipped('0');
+                            setFormError('');
                             setOpen(true);
                           }
                         }}

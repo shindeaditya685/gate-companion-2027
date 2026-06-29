@@ -314,7 +314,7 @@ export const MOCK_RANK_TABLE = [
 ];
 
 export function scoreToRank(score: number) {
-  return MOCK_RANK_TABLE.find(t => score >= t.min && score < t.max) ?? MOCK_RANK_TABLE[MOCK_RANK_TABLE.length - 1];
+  return MOCK_RANK_TABLE.find(t => score >= t.min && score <= t.max) ?? MOCK_RANK_TABLE[MOCK_RANK_TABLE.length - 1];
 }
 
 // PSU exam info

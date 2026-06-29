@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   LayoutDashboard, BookOpen, CalendarDays, Repeat,
-  FileBarChart, FileText, Building2, HeartPulse, ScrollText,
+  FileBarChart, FileText, Building2, HeartPulse, ScrollText, Timer,
 } from 'lucide-react';
 import { Dashboard } from '@/components/sections/dashboard';
 import { SubjectsView } from '@/components/sections/subjects';
@@ -15,6 +15,7 @@ import { PYQTrackerView } from '@/components/sections/pyq-tracker';
 import { CheatSheetView } from '@/components/sections/cheat-sheet';
 import { PSUTrackerView } from '@/components/sections/psu-tracker';
 import { SelfCareView } from '@/components/sections/self-care';
+import { StudyTimer } from '@/components/sections/study-timer';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
 
@@ -65,6 +66,10 @@ export default function Home() {
                 <HeartPulse className="h-4 w-4" />
                 Self-Care
               </TabsTrigger>
+              <TabsTrigger value="timer" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
+                <Timer className="h-4 w-4" />
+                Timer
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -94,6 +99,9 @@ export default function Home() {
           </TabsContent>
           <TabsContent value="selfcare" className="mt-0">
             <SelfCareView />
+          </TabsContent>
+          <TabsContent value="timer" className="mt-0">
+            <StudyTimer />
           </TabsContent>
         </Tabs>
       </main>

@@ -98,6 +98,14 @@ export interface CheatSheetItem {
   aiExplanation?: string;
 }
 
+export interface StudySession {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  date: string;
+  durationMinutes: number;
+}
+
 export interface PrepState {
   startDate: string;
   gateDate: string;
@@ -107,6 +115,7 @@ export interface PrepState {
   mocks: MockEntry[];
   checkIns: BurnoutCheckIn[];
   cheatSheetItems: CheatSheetItem[];
+  studySessions: StudySession[];
   setSubjectStatus: (subjectId: string, status: SubjectStatus) => void;
   toggleTopic: (subjectId: string, topicId: string) => void;
   addSRItem: (item: Omit<SpacedRepetitionItem, 'id'>) => void;
@@ -125,6 +134,8 @@ export interface PrepState {
   addCheatSheetItem: (item: Omit<CheatSheetItem, 'id'>) => void;
   removeCheatSheetItem: (id: string) => void;
   updateCheatSheetItem: (id: string, data: Partial<CheatSheetItem>) => void;
+  addStudySession: (session: Omit<StudySession, 'id'>) => void;
+  removeStudySession: (id: string) => void;
   resetAll: () => void;
   loadFromMongo: (data: {
     startDate: string;
@@ -135,5 +146,6 @@ export interface PrepState {
     checkIns: BurnoutCheckIn[];
     pyqAttempts: PYQAttempt[];
     cheatSheetItems: CheatSheetItem[];
+    studySessions?: StudySession[];
   }) => void;
 }

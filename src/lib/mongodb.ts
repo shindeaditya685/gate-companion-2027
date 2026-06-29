@@ -24,8 +24,8 @@ async function createConnection(): Promise<{ client: MongoClient; db: Db } | nul
     const db = client.db()
     console.log(`[DB] Connected to database: ${db.databaseName}`)
     return { client, db }
-  } catch (err: any) {
-    console.error(`[DB] Connection failed: ${err?.message || err}`)
+  } catch (err: unknown) {
+    console.error(`[DB] Connection failed: ${err instanceof Error ? err.message : String(err)}`)
     return null
   }
 }

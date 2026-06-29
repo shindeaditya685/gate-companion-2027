@@ -7,7 +7,7 @@ const COLLECTION = 'prep-states';
 function getToken(req: NextRequest): string | null {
   const auth = req.headers.get('authorization')
   if (auth?.startsWith('Bearer ')) return auth.slice(7)
-  return req.nextUrl.searchParams.get('token') ?? null
+  return null
 }
 
 export async function GET(req: NextRequest) {
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
         mocks: doc.mocks ?? [],
         checkIns: doc.checkIns ?? [],
         cheatSheetItems: doc.cheatSheetItems ?? [],
+        studySessions: doc.studySessions ?? [],
       },
     });
   } catch (error) {
@@ -53,7 +54,7 @@ export async function PUT(req: NextRequest) {
     if (!conn) return NextResponse.json({ error: 'Database not available' }, { status: 503 });
 
     const body = await req.json();
-    const { startDate, gateDate, subjects, srItems, pyqAttempts, mocks, checkIns, cheatSheetItems } = body;
+    const { startDate, gateDate, subjects, srItems, pyqAttempts, mocks, checkIns, cheatSheetItems, studySessions } = body;
 
     const payload = {
       userId: session.userId,
@@ -64,6 +65,7 @@ export async function PUT(req: NextRequest) {
       mocks: mocks ?? [],
       checkIns: checkIns ?? [],
       cheatSheetItems: cheatSheetItems ?? [],
+      studySessions: studySessions ?? [],
       updatedAt: new Date(),
     };
 
