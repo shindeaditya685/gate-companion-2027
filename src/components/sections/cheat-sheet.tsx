@@ -676,12 +676,18 @@ export function CheatSheetView() {
               return (
                 <div className="flex flex-col items-center gap-6">
                   <div
-                    className="flex min-h-64 w-full max-w-lg cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 p-8 text-center transition-all duration-300 select-none"
+                    className="flex min-h-64 w-full max-w-lg cursor-pointer select-none"
                     onClick={() => setFlipped(!flipped)}
-                    style={{ transform: flipped ? 'rotateY(180deg)' : 'none' }}
+                    style={{ perspective: '1000px' }}
                   >
-                    {!flipped ? (
-                      <>
+                    <div
+                      className="relative h-full w-full transition-all duration-500"
+                      style={{ transformStyle: 'preserve-3d', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+                    >
+                      <div
+                        className="flex min-h-64 w-full flex-col items-center justify-center gap-4 rounded-xl border-2 p-8 text-center"
+                        style={{ backfaceVisibility: 'hidden' }}
+                      >
                         <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50">{item.name}</h3>
                         <Badge variant="outline" className={cn('text-xs', difficulty.className)}>
                           {difficulty.label}
@@ -690,18 +696,22 @@ export function CheatSheetView() {
                           <p className="text-xs text-slate-500">{item.subject}</p>
                         )}
                         <p className="mt-4 text-sm text-slate-400">Tap to reveal formula</p>
-                      </>
-                    ) : (
-                      <div className="w-full">
-                        <FormulaBlock formula={item.formula} />
-                        {item.example && (
-                          <div className="mt-4 rounded-md border border-sky-100 bg-sky-50 p-3 text-left text-sm dark:border-sky-900 dark:bg-sky-950/30">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">Example</p>
-                            <p className="mt-1 text-sky-900 dark:text-sky-200">{item.example}</p>
-                          </div>
-                        )}
                       </div>
-                    )}
+                      <div
+                        className="absolute inset-0 flex min-h-64 w-full flex-col items-center justify-center rounded-xl border-2 p-8"
+                        style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                      >
+                        <div className="w-full">
+                          <FormulaBlock formula={item.formula} />
+                          {item.example && (
+                            <div className="mt-4 rounded-md border border-sky-100 bg-sky-50 p-3 text-left text-sm dark:border-sky-900 dark:bg-sky-950/30">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">Example</p>
+                              <p className="mt-1 text-sky-900 dark:text-sky-200">{item.example}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex gap-3 no-print">
