@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
-import { usePrepStore } from '@/lib/store';
+import { usePrepStore, getSnapshot, saveToLocalStorage, loadFromLocalStorage } from '@/lib/store';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -11,17 +12,21 @@ function getToken(): string | null {
 
 export function MongoSyncProvider({ children }: { children: React.ReactNode }) {
   const store = usePrepStore();
+  const [ready, setReady] = useState(false);
   const savedRef = useRef('');
-  const loadingRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const mountedRef = useRef(true);
 
   useEffect(() => {
-    mountedRef.current = true;
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      const cached = loadFromLocalStorage();
+      if (cached) store.loadFromMongo(cached);
+      setReady(true);
+      return;
+    }
 
     const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     fetch('/api/prep', {
       signal: controller.signal,
@@ -32,24 +37,28 @@ export function MongoSyncProvider({ children }: { children: React.ReactNode }) {
         return res.json();
       })
       .then((json) => {
-        if (!mountedRef.current) return;
         if (json.data) {
-          loadingRef.current = true;
           store.loadFromMongo(json.data);
-          loadingRef.current = false;
+          saveToLocalStorage(json.data);
         }
       })
       .catch((err) => {
-        if (err.name !== 'AbortError') {
-          toast.error('Failed to sync data from server');
+        if (err.name === 'AbortError') return;
+        const cached = loadFromLocalStorage();
+        if (cached) {
+          store.loadFromMongo(cached);
         }
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        setReady(true);
       });
 
-    return () => { mountedRef.current = false; controller.abort(); };
+    return () => { clearTimeout(timeout); controller.abort(); };
   }, []);
 
   useEffect(() => {
-    if (loadingRef.current) return;
+    if (!ready) return;
 
     const token = getToken();
     if (!token) return;
@@ -58,25 +67,18 @@ export function MongoSyncProvider({ children }: { children: React.ReactNode }) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
 
       debounceRef.current = setTimeout(() => {
-        const snapshot = JSON.stringify({
-          startDate: state.startDate,
-          gateDate: state.gateDate,
-          subjects: state.subjects,
-          srItems: state.srItems,
-          pyqAttempts: state.pyqAttempts,
-          mocks: state.mocks,
-          checkIns: state.checkIns,
-          cheatSheetItems: state.cheatSheetItems,
-          studySessions: state.studySessions,
-        });
+        const snapshot = getSnapshot(state);
+        const serialized = JSON.stringify(snapshot);
 
-        if (snapshot === savedRef.current) return;
-        savedRef.current = snapshot;
+        if (serialized === savedRef.current) return;
+        savedRef.current = serialized;
+
+        saveToLocalStorage(snapshot);
 
         fetch('/api/prep', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: snapshot,
+          body: serialized,
         }).catch(() => {
           toast.error('Failed to sync data to server');
         });
@@ -87,7 +89,20 @@ export function MongoSyncProvider({ children }: { children: React.ReactNode }) {
       unsub();
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, []);
+  }, [ready]);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
+            <GraduationCap className="h-5 w-5 text-white" />
+          </div>
+          <div className="animate-pulse text-sm text-slate-400">Loading your data...</div>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }

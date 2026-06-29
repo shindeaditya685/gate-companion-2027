@@ -106,6 +106,18 @@ export interface StudySession {
   durationMinutes: number;
 }
 
+export type PrepSnapshot = {
+  startDate: string;
+  gateDate: string;
+  subjects: Subject[];
+  srItems: SpacedRepetitionItem[];
+  pyqAttempts: PYQAttempt[];
+  mocks: MockEntry[];
+  checkIns: BurnoutCheckIn[];
+  cheatSheetItems: CheatSheetItem[];
+  studySessions: StudySession[];
+};
+
 export interface PrepState {
   startDate: string;
   gateDate: string;
@@ -137,15 +149,5 @@ export interface PrepState {
   addStudySession: (session: Omit<StudySession, 'id'>) => void;
   removeStudySession: (id: string) => void;
   resetAll: () => void;
-  loadFromMongo: (data: {
-    startDate: string;
-    gateDate: string;
-    subjects: Subject[];
-    srItems: SpacedRepetitionItem[];
-    mocks: MockEntry[];
-    checkIns: BurnoutCheckIn[];
-    pyqAttempts: PYQAttempt[];
-    cheatSheetItems: CheatSheetItem[];
-    studySessions?: StudySession[];
-  }) => void;
+  loadFromMongo: (data: PrepSnapshot) => void;
 }

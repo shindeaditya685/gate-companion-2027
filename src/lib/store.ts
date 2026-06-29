@@ -1,10 +1,9 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type {
   Subject, SubjectStatus, SpacedRepetitionItem, MockEntry,
-  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem, StudySession,
+  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem, StudySession, PrepSnapshot,
 } from './types';
 import { SEED_SUBJECTS, PHASES, SEED_CHEAT_SHEET_V2 } from './data';
 
@@ -59,204 +58,191 @@ const INITIAL_STATE = {
 };
 
 export const usePrepStore = create<PrepState>()(
-  persist(
-    (set) => ({
-      ...INITIAL_STATE,
+  (set) => ({
+    ...INITIAL_STATE,
 
-      setSubjectStatus: (subjectId, status) =>
-        set((s) => ({
-          subjects: s.subjects.map((sub) =>
-            sub.id === subjectId ? { ...sub, status } : sub
-          ),
-        })),
+    setSubjectStatus: (subjectId, status) =>
+      set((s) => ({
+        subjects: s.subjects.map((sub) =>
+          sub.id === subjectId ? { ...sub, status } : sub
+        ),
+      })),
 
-      toggleTopic: (subjectId, topicId) =>
-        set((s) => ({
-          subjects: s.subjects.map((sub) =>
-            sub.id === subjectId
-              ? {
-                  ...sub,
-                  mustMasterTopics: sub.mustMasterTopics.map((t) =>
-                    t.id === topicId ? { ...t, completed: !t.completed } : t
-                  ),
-                }
-              : sub
-          ),
-        })),
+    toggleTopic: (subjectId, topicId) =>
+      set((s) => ({
+        subjects: s.subjects.map((sub) =>
+          sub.id === subjectId
+            ? {
+                ...sub,
+                mustMasterTopics: sub.mustMasterTopics.map((t) =>
+                  t.id === topicId ? { ...t, completed: !t.completed } : t
+                ),
+              }
+            : sub
+        ),
+      })),
 
-      addSRItem: (item) =>
-        set((s) => ({
-          srItems: [
-            ...s.srItems,
-            {
-              ...item,
-              id: `sr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              ...makeDueDates(item.learnedDate),
-            },
-          ],
-        })),
+    addSRItem: (item) =>
+      set((s) => ({
+        srItems: [
+          ...s.srItems,
+          {
+            ...item,
+            id: `sr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            ...makeDueDates(item.learnedDate),
+          },
+        ],
+      })),
 
-      markSRReviewDone: (itemId, reviewKey) =>
-        set((s) => ({
-          srItems: s.srItems.map((it) =>
-            it.id === itemId && it[reviewKey]
-              ? {
-                  ...it,
-                  [reviewKey]: { ...it[reviewKey]!, done: true },
-                }
-              : it
-          ),
-        })),
+    markSRReviewDone: (itemId, reviewKey) =>
+      set((s) => ({
+        srItems: s.srItems.map((it) =>
+          it.id === itemId && it[reviewKey]
+            ? {
+                ...it,
+                [reviewKey]: { ...it[reviewKey]!, done: true },
+              }
+            : it
+        ),
+      })),
 
-      removeSRItem: (itemId) =>
-        set((s) => ({
-          srItems: s.srItems.filter((it) => it.id !== itemId),
-        })),
+    removeSRItem: (itemId) =>
+      set((s) => ({
+        srItems: s.srItems.filter((it) => it.id !== itemId),
+      })),
 
-      addMock: (mock) =>
-        set((s) => ({
-          mocks: [
-            ...s.mocks,
-            {
-              ...mock,
-              id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            },
-          ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-        })),
+    addMock: (mock) =>
+      set((s) => ({
+        mocks: [
+          ...s.mocks,
+          {
+            ...mock,
+            id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          },
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      })),
 
-      removeMock: (id) =>
-        set((s) => ({
-          mocks: s.mocks.filter((m) => m.id !== id),
-        })),
+    removeMock: (id) =>
+      set((s) => ({
+        mocks: s.mocks.filter((m) => m.id !== id),
+      })),
 
-      addCheckIn: (ci) =>
-        set((s) => ({
-          checkIns: [
-            ...s.checkIns,
-            {
-              ...ci,
-              id: `ci-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            },
-          ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-        })),
+    addCheckIn: (ci) =>
+      set((s) => ({
+        checkIns: [
+          ...s.checkIns,
+          {
+            ...ci,
+            id: `ci-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          },
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      })),
 
-      removeCheckIn: (id) =>
-        set((s) => ({
-          checkIns: s.checkIns.filter((c) => c.id !== id),
-        })),
+    removeCheckIn: (id) =>
+      set((s) => ({
+        checkIns: s.checkIns.filter((c) => c.id !== id),
+      })),
 
-      addPYQAttempt: (attempt) =>
-        set((s) => ({
-          pyqAttempts: [
-            ...s.pyqAttempts,
-            {
-              ...attempt,
-              id: `pyq-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            },
-          ],
-        })),
+    addPYQAttempt: (attempt) =>
+      set((s) => ({
+        pyqAttempts: [
+          ...s.pyqAttempts,
+          {
+            ...attempt,
+            id: `pyq-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          },
+        ],
+      })),
 
-      updatePYQAttempt: (id, data) =>
-        set((s) => ({
-          pyqAttempts: s.pyqAttempts.map((a) =>
-            a.id === id ? { ...a, ...data } : a
-          ),
-        })),
+    updatePYQAttempt: (id, data) =>
+      set((s) => ({
+        pyqAttempts: s.pyqAttempts.map((a) =>
+          a.id === id ? { ...a, ...data } : a
+        ),
+      })),
 
-      removePYQAttempt: (id) =>
-        set((s) => ({
-          pyqAttempts: s.pyqAttempts.filter((a) => a.id !== id),
-        })),
+    removePYQAttempt: (id) =>
+      set((s) => ({
+        pyqAttempts: s.pyqAttempts.filter((a) => a.id !== id),
+      })),
 
-      toggleCheatSheetMastered: (id) =>
-        set((s) => ({
-          cheatSheetItems: s.cheatSheetItems.map((item) =>
-            item.id === id ? { ...item, mastered: !item.mastered } : item
-          ),
-        })),
+    toggleCheatSheetMastered: (id) =>
+      set((s) => ({
+        cheatSheetItems: s.cheatSheetItems.map((item) =>
+          item.id === id ? { ...item, mastered: !item.mastered } : item
+        ),
+      })),
 
-      updateCheatSheetNotes: (id, notes) =>
-        set((s) => ({
-          cheatSheetItems: s.cheatSheetItems.map((item) =>
-            item.id === id ? { ...item, notes } : item
-          ),
-        })),
+    updateCheatSheetNotes: (id, notes) =>
+      set((s) => ({
+        cheatSheetItems: s.cheatSheetItems.map((item) =>
+          item.id === id ? { ...item, notes } : item
+        ),
+      })),
 
-      updateCheatSheetAIExplanation: (id, aiExplanation) =>
-        set((s) => ({
-          cheatSheetItems: s.cheatSheetItems.map((item) =>
-            item.id === id ? { ...item, aiExplanation } : item
-          ),
-        })),
+    updateCheatSheetAIExplanation: (id, aiExplanation) =>
+      set((s) => ({
+        cheatSheetItems: s.cheatSheetItems.map((item) =>
+          item.id === id ? { ...item, aiExplanation } : item
+        ),
+      })),
 
-      addCheatSheetItem: (item) =>
-        set((s) => ({
-          cheatSheetItems: [
-            ...s.cheatSheetItems,
-            {
-              ...item,
-              id: `cs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              isUserAdded: true,
-              mastered: false,
-            },
-          ],
-        })),
+    addCheatSheetItem: (item) =>
+      set((s) => ({
+        cheatSheetItems: [
+          ...s.cheatSheetItems,
+          {
+            ...item,
+            id: `cs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            isUserAdded: true,
+            mastered: false,
+          },
+        ],
+      })),
 
-      removeCheatSheetItem: (id) =>
-        set((s) => ({
-          cheatSheetItems: s.cheatSheetItems.filter((item) => item.id !== id),
-        })),
+    removeCheatSheetItem: (id) =>
+      set((s) => ({
+        cheatSheetItems: s.cheatSheetItems.filter((item) => item.id !== id),
+      })),
 
-      updateCheatSheetItem: (id, data) =>
-        set((s) => ({
-          cheatSheetItems: s.cheatSheetItems.map((item) =>
-            item.id === id ? { ...item, ...data } : item
-          ),
-        })),
+    updateCheatSheetItem: (id, data) =>
+      set((s) => ({
+        cheatSheetItems: s.cheatSheetItems.map((item) =>
+          item.id === id ? { ...item, ...data } : item
+        ),
+      })),
 
-      addStudySession: (session) =>
-        set((s) => ({
-          studySessions: [
-            ...s.studySessions,
-            {
-              ...session,
-              id: `ss-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            },
-          ],
-        })),
+    addStudySession: (session) =>
+      set((s) => ({
+        studySessions: [
+          ...s.studySessions,
+          {
+            ...session,
+            id: `ss-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          },
+        ],
+      })),
 
-      removeStudySession: (id) =>
-        set((s) => ({
-          studySessions: s.studySessions.filter((ss) => ss.id !== id),
-        })),
+    removeStudySession: (id) =>
+      set((s) => ({
+        studySessions: s.studySessions.filter((ss) => ss.id !== id),
+      })),
 
-      resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2 }),
+    resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2 }),
 
-      loadFromMongo: (data) =>
-        set({
-          startDate: data.startDate,
-          gateDate: data.gateDate,
-          subjects: data.subjects,
-          srItems: data.srItems,
-          pyqAttempts: data.pyqAttempts,
-          mocks: data.mocks,
-          checkIns: data.checkIns,
-          cheatSheetItems: mergeCheatSheetItems(data.cheatSheetItems ?? []),
-          studySessions: data.studySessions ?? [],
-        }),
-    }),
-    {
-      name: 'gate-prep-store-v1',
-      version: 2,
-      migrate: (persistedState) => {
-        const state = persistedState as Partial<PrepState>;
-        return {
-          ...state,
-          cheatSheetItems: mergeCheatSheetItems(state.cheatSheetItems ?? []),
-        };
-      },
-    }
-  )
+    loadFromMongo: (data) =>
+      set({
+        startDate: data.startDate,
+        gateDate: data.gateDate,
+        subjects: data.subjects,
+        srItems: data.srItems,
+        pyqAttempts: data.pyqAttempts,
+        mocks: data.mocks,
+        checkIns: data.checkIns,
+        cheatSheetItems: mergeCheatSheetItems(data.cheatSheetItems ?? []),
+        studySessions: data.studySessions ?? [],
+      }),
+  })
 );
 
 export function subjectCompletion(subject: Subject): number {
@@ -317,6 +303,44 @@ export function todayStudyMinutes(sessions: StudySession[]): number {
   return sessions
     .filter((s) => s.date === today)
     .reduce((sum, s) => sum + s.durationMinutes, 0);
+}
+
+const STORAGE_KEY = 'gate-prep-store-v1';
+
+export function getSnapshot(state: PrepState): PrepSnapshot {
+  return {
+    startDate: state.startDate,
+    gateDate: state.gateDate,
+    subjects: state.subjects,
+    srItems: state.srItems,
+    pyqAttempts: state.pyqAttempts,
+    mocks: state.mocks,
+    checkIns: state.checkIns,
+    cheatSheetItems: state.cheatSheetItems,
+    studySessions: state.studySessions,
+  };
+}
+
+export function saveToLocalStorage(snapshot: PrepSnapshot) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {}
+}
+
+export function loadFromLocalStorage(): PrepSnapshot | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PrepSnapshot;
+  } catch {
+    return null;
+  }
+}
+
+export function clearLocalStorage() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {}
 }
 
 export function weekStudyMinutes(sessions: StudySession[]): number {

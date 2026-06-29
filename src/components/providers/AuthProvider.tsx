@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, Lock, GraduationCap, UserPlus, LogIn } from 'lucide-react'
 import { AuthContext } from '@/lib/auth-context'
+import { clearLocalStorage } from '@/lib/store'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authed, setAuthed] = useState<boolean | null>(() => {
@@ -90,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }).catch(() => {})
     }
     localStorage.removeItem('auth-token')
+    clearLocalStorage()
     setUser(null)
     setAuthed(false)
   }, [])

@@ -19,6 +19,19 @@ import { StudyTimer } from '@/components/sections/study-timer';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
 
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+  { id: 'subjects', label: 'Subjects', Icon: BookOpen },
+  { id: 'timeline', label: 'Timeline', Icon: CalendarDays },
+  { id: 'spaced', label: 'Spaced Rep.', Icon: Repeat },
+  { id: 'mocks', label: 'Mocks', Icon: FileBarChart },
+  { id: 'pyq', label: 'PYQs', Icon: ScrollText },
+  { id: 'cheatsheet', label: 'Cheat Sheet', Icon: FileText },
+  { id: 'psu', label: 'PSU Tracker', Icon: Building2 },
+  { id: 'selfcare', label: 'Self-Care', Icon: HeartPulse },
+  { id: 'timer', label: 'Timer', Icon: Timer },
+] as const;
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -29,49 +42,45 @@ export default function Home() {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="mb-6 overflow-x-auto">
-            <TabsList className="grid w-full min-w-[860px] grid-cols-9 h-auto">
-              <TabsTrigger value="dashboard" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </TabsTrigger>
-              <TabsTrigger value="subjects" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <BookOpen className="h-4 w-4" />
-                Subjects
-              </TabsTrigger>
-              <TabsTrigger value="timeline" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <CalendarDays className="h-4 w-4" />
-                Timeline
-              </TabsTrigger>
-              <TabsTrigger value="spaced" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <Repeat className="h-4 w-4" />
-                Spaced Rep.
-              </TabsTrigger>
-              <TabsTrigger value="mocks" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <FileBarChart className="h-4 w-4" />
-                Mocks
-              </TabsTrigger>
-              <TabsTrigger value="pyq" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <ScrollText className="h-4 w-4" />
-                PYQs
-              </TabsTrigger>
-              <TabsTrigger value="cheatsheet" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <FileText className="h-4 w-4" />
-                Cheat Sheet
-              </TabsTrigger>
-              <TabsTrigger value="psu" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <Building2 className="h-4 w-4" />
-                PSU Tracker
-              </TabsTrigger>
-              <TabsTrigger value="selfcare" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <HeartPulse className="h-4 w-4" />
-                Self-Care
-              </TabsTrigger>
-              <TabsTrigger value="timer" className="flex flex-col items-center gap-1 py-2 px-2 text-xs sm:text-sm">
-                <Timer className="h-4 w-4" />
-                Timer
-              </TabsTrigger>
+            <TabsList className="gap-0">
+              {TABS.map(({ id, label, Icon }) => (
+                <TabsTrigger
+                  key={id}
+                  value={id}
+                  className={[
+                    'flex-1 min-w-0',
+                    'data-[state=active]:bg-gradient-to-b data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600',
+                    'data-[state=active]:text-white',
+                    'data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25',
+                    'data-[state=active]:rounded-t-xl',
+                    'data-[state=active]:-mb-px',
+                    'data-[state=active]:border data-[state=active]:border-emerald-600 data-[state=active]:border-b-0',
+                    'data-[state=active]:relative',
+                  ].join(' ')}
+                >
+                  <Icon
+                    className={[
+                      'h-4 w-4',
+                      'data-[state=active]:animate-tab-pop',
+                    ].join(' ')}
+                    data-state={activeTab === id ? 'active' : 'inactive'}
+                  />
+                  <span className="truncate max-w-full">{label}</span>
+                </TabsTrigger>
+              ))}
             </TabsList>
           </div>
+
+          <style>{`
+            @keyframes tab-pop {
+              0% { transform: scale(1); }
+              40% { transform: scale(1.2); }
+              100% { transform: scale(1); }
+            }
+            .animate-tab-pop {
+              animation: tab-pop 300ms ease-out;
+            }
+          `}</style>
 
           <TabsContent value="dashboard" className="mt-0">
             <Dashboard onNavigate={setActiveTab} />
