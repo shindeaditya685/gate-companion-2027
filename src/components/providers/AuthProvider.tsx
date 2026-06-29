@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, Lock, GraduationCap, UserPlus, LogIn } from 'lucide-react'
+import { AuthContext } from '@/lib/auth-context'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authed, setAuthed] = useState<boolean | null>(() => {
@@ -79,6 +80,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [mode, email, password, name])
 
+  const logout = useCallback(() => {
+    const token = localStorage.getItem('auth-token')
+    if (token) {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      }).catch(() => {})
+    }
+    localStorage.removeItem('auth-token')
+    setUser(null)
+    setAuthed(false)
+  }, [])
+
   if (authed === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
@@ -88,7 +103,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (authed === true) {
-    return <>{children}</>
+    return (
+      <AuthContext.Provider value={{ user, logout, isLoading: false }}>
+        {children}
+      </AuthContext.Provider>
+    )
   }
 
   return (
