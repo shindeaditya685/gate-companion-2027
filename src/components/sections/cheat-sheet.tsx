@@ -9,8 +9,10 @@ import {
   Code2,
   Edit3,
   FileText,
+  FlipHorizontal,
   Lightbulb,
   Plus,
+  Printer,
   Search,
   Sparkles,
   StickyNote,
@@ -40,12 +42,14 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { SEED_SUBJECTS } from '@/lib/data';
 import { cheatSheetProgress, usePrepStore } from '@/lib/store';
 import type { CheatSheetDifficulty, CheatSheetItem } from '@/lib/types';
 
 const ALL_SUBJECTS = 'all';
 const ALL_DIFFICULTIES = 'all';
 const ALL_STATUSES = 'all';
+const DEFAULT_SUBJECT = SEED_SUBJECTS[0]?.name ?? 'Engineering Mathematics';
 
 const DIFFICULTIES: { value: CheatSheetDifficulty; label: string; className: string }[] = [
   {
@@ -75,6 +79,8 @@ type CheatSheetForm = {
   tags: string;
   notes: string;
 };
+
+type AIDraftItem = Partial<Pick<CheatSheetItem, 'name' | 'subject' | 'formula' | 'example' | 'code' | 'notes' | 'tags' | 'difficulty'>>;
 
 const EMPTY_FORM: CheatSheetForm = {
   name: '',
@@ -159,13 +165,29 @@ export function CheatSheetView() {
   const [editingItem, setEditingItem] = useState<CheatSheetItem | null>(null);
   const [form, setForm] = useState<CheatSheetForm>(EMPTY_FORM);
   const [explainingId, setExplainingId] = useState<string | null>(null);
+  const [draftTopic, setDraftTopic] = useState('');
+  const [draftSubject, setDraftSubject] = useState(DEFAULT_SUBJECT);
+  const [draftDifficulty, setDraftDifficulty] = useState<CheatSheetDifficulty>('must-know');
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState('');
+  const [mode, setMode] = useState<'list' | 'flashcard'>('list');
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const progress = cheatSheetProgress(cheatSheetItems);
 
-  const subjects = useMemo(
-    () => Array.from(new Set(cheatSheetItems.map((item) => item.subject))).sort(),
-    [cheatSheetItems]
-  );
+  const subjects = useMemo(() => {
+    const baseSubjects = SEED_SUBJECTS.map((subject) => subject.name);
+    const extraSubjects = cheatSheetItems
+      .map((item) => item.subject)
+      .filter((subject) => !baseSubjects.includes(subject));
+
+    return [...baseSubjects, ...Array.from(new Set(extraSubjects)).sort()];
+  }, [cheatSheetItems]);
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -205,7 +227,7 @@ export function CheatSheetView() {
     setEditingItem(null);
     setForm({
       ...EMPTY_FORM,
-      subject: activeSubject === ALL_SUBJECTS ? subjects[0] ?? '' : activeSubject,
+      subject: activeSubject === ALL_SUBJECTS ? draftSubject || subjects[0] || DEFAULT_SUBJECT : activeSubject,
     });
     setOpen(true);
   };
@@ -268,6 +290,49 @@ export function CheatSheetView() {
       updateCheatSheetAIExplanation(item.id, 'AI explanation unavailable. Check the app connection and GROQ_API_KEY.');
     } finally {
       setExplainingId(null);
+    }
+  };
+
+  const draftWithAI = async () => {
+    const topic = draftTopic.trim() || query.trim();
+    if (!topic || !draftSubject) return;
+
+    setDrafting(true);
+    setDraftError('');
+
+    try {
+      const response = await fetch('/api/cheat-sheet/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          subject: draftSubject,
+          difficulty: draftDifficulty,
+        }),
+      });
+
+      const data = (await response.json()) as { item?: AIDraftItem; error?: string };
+
+      if (!response.ok || !data.item?.formula) {
+        throw new Error(data.error ?? 'AI draft unavailable.');
+      }
+
+      setEditingItem(null);
+      setForm({
+        name: data.item.name?.trim() || topic,
+        subject: draftSubject,
+        formula: data.item.formula.trim(),
+        difficulty: data.item.difficulty ?? draftDifficulty,
+        example: data.item.example ?? '',
+        code: data.item.code ?? '',
+        tags: data.item.tags?.join(', ') ?? '',
+        notes: data.item.notes ?? '',
+      });
+      setOpen(true);
+    } catch (err) {
+      setDraftError(err instanceof Error ? err.message : 'AI draft unavailable.');
+    } finally {
+      setDrafting(false);
     }
   };
 
@@ -365,7 +430,28 @@ export function CheatSheetView() {
               </SelectContent>
             </Select>
 
-            <Dialog open={open} onOpenChange={setOpen}>
+            <div className="flex gap-2">
+              <Button
+                variant={mode === 'flashcard' ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => { setMode('flashcard'); setFlashcardIndex(0); setFlipped(false); }}
+              >
+                <FlipHorizontal className="h-4 w-4" />
+                Flashcard
+              </Button>
+              <Button
+                variant={mode === 'list' ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => setMode('list')}
+              >
+                <BookOpen className="h-4 w-4" />
+                List
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4" />
+                Print
+              </Button>
+              <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button onClick={openAddDialog}>
                   <Plus className="h-4 w-4" />
@@ -392,17 +478,21 @@ export function CheatSheetView() {
                     </div>
                     <div className="space-y-1.5">
                       <Label>Subject</Label>
-                      <Input
-                        value={form.subject}
-                        onChange={(event) => updateForm('subject', event.target.value)}
-                        placeholder="e.g. Algorithms"
-                        list="cheat-sheet-subjects"
-                      />
-                      <datalist id="cheat-sheet-subjects">
+                      <Select
+                        value={form.subject || DEFAULT_SUBJECT}
+                        onValueChange={(value) => updateForm('subject', value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Subject" />
+                        </SelectTrigger>
+                        <SelectContent>
                         {subjects.map((subject) => (
-                          <option key={subject} value={subject} />
+                          <SelectItem key={subject} value={subject}>
+                            {subject}
+                          </SelectItem>
                         ))}
-                      </datalist>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -484,9 +574,77 @@ export function CheatSheetView() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-violet-100 bg-violet-50/70 p-3 dark:border-violet-900 dark:bg-violet-950/20">
+            <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_220px_150px_auto]">
+              <div className="relative">
+                <Sparkles className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+                <Input
+                  value={draftTopic}
+                  onChange={(event) => setDraftTopic(event.target.value)}
+                  onKeyDown={(event) => event.key === 'Enter' && draftWithAI()}
+                  placeholder="AI draft topic, e.g. FD closure, TCP AIMD, Master theorem..."
+                  className="border-violet-200 bg-white pl-10 dark:border-violet-900 dark:bg-slate-950"
+                />
+              </div>
+
+              <Select value={draftSubject} onValueChange={setDraftSubject}>
+                <SelectTrigger className="w-full border-violet-200 bg-white dark:border-violet-900 dark:bg-slate-950">
+                  <SelectValue placeholder="Subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={draftDifficulty}
+                onValueChange={(value) => setDraftDifficulty(value as CheatSheetDifficulty)}
+              >
+                <SelectTrigger className="w-full border-violet-200 bg-white dark:border-violet-900 dark:bg-slate-950">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DIFFICULTIES.map((difficulty) => (
+                    <SelectItem key={difficulty.value} value={difficulty.value}>
+                      {difficulty.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="secondary"
+                onClick={draftWithAI}
+                disabled={drafting || (!draftTopic.trim() && !query.trim())}
+                className="border border-violet-200 bg-white text-violet-700 hover:bg-violet-100 dark:border-violet-900 dark:bg-slate-950 dark:text-violet-300 dark:hover:bg-violet-950"
+              >
+                <Sparkles className="h-4 w-4" />
+                {drafting ? 'Drafting' : 'Draft'}
+              </Button>
+            </div>
+            {draftError && (
+              <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{draftError}</p>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .print-area, .print-area * { visibility: visible; }
+          .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print { display: none !important; }
+          @page { margin: 1.5cm; size: A4 portrait; }
+        }
+      `}</style>
 
       {filteredItems.length === 0 ? (
         <Card className="border-2 border-dashed border-slate-200 dark:border-slate-800">
@@ -498,8 +656,95 @@ export function CheatSheetView() {
             </p>
           </CardContent>
         </Card>
+      ) : mode === 'flashcard' ? (
+        <Card>
+          <CardHeader className="pb-3 no-print">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FlipHorizontal className="h-4 w-4 text-emerald-600" />
+              Flashcard Review
+              <Badge variant="outline" className="ml-auto text-[10px]">
+                {flashcardIndex + 1} / {filteredItems.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const item = filteredItems[flashcardIndex];
+              if (!item) return <p className="text-slate-500">No flashcards available.</p>;
+              const difficulty = difficultyMeta(item.difficulty);
+
+              return (
+                <div className="flex flex-col items-center gap-6">
+                  <div
+                    className="flex min-h-64 w-full max-w-lg cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 p-8 text-center transition-all duration-300 select-none"
+                    onClick={() => setFlipped(!flipped)}
+                    style={{ transform: flipped ? 'rotateY(180deg)' : 'none' }}
+                  >
+                    {!flipped ? (
+                      <>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50">{item.name}</h3>
+                        <Badge variant="outline" className={cn('text-xs', difficulty.className)}>
+                          {difficulty.label}
+                        </Badge>
+                        {item.subject && (
+                          <p className="text-xs text-slate-500">{item.subject}</p>
+                        )}
+                        <p className="mt-4 text-sm text-slate-400">Tap to reveal formula</p>
+                      </>
+                    ) : (
+                      <div className="w-full">
+                        <FormulaBlock formula={item.formula} />
+                        {item.example && (
+                          <div className="mt-4 rounded-md border border-sky-100 bg-sky-50 p-3 text-left text-sm dark:border-sky-900 dark:bg-sky-950/30">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">Example</p>
+                            <p className="mt-1 text-sky-900 dark:text-sky-200">{item.example}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 no-print">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (flashcardIndex > 0) { setFlashcardIndex(flashcardIndex - 1); setFlipped(false); }
+                      }}
+                      disabled={flashcardIndex === 0}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant={item.mastered ? 'secondary' : 'outline'}
+                      onClick={() => toggleCheatSheetMastered(item.id)}
+                    >
+                      <Check className="h-4 w-4" />
+                      {item.mastered ? 'Mastered' : 'Mark Mastered'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (flashcardIndex < filteredItems.length - 1) { setFlashcardIndex(flashcardIndex + 1); setFlipped(false); }
+                      }}
+                      disabled={flashcardIndex === filteredItems.length - 1}
+                    >
+                      Next
+                    </Button>
+                  </div>
+
+                  {item.aiExplanation && (
+                    <div className="w-full max-w-lg rounded-md border border-violet-100 bg-violet-50 p-3 text-sm dark:border-violet-900 dark:bg-violet-950/30">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300">AI Explanation</p>
+                      <p className="mt-1 text-violet-900 dark:text-violet-200">{item.aiExplanation}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="print-area space-y-4">
           {Object.entries(groupedItems).map(([subject, items]) => (
             <Card key={subject}>
               <CardHeader className="pb-3">
@@ -601,7 +846,7 @@ export function CheatSheetView() {
                           )}
                         </div>
 
-                        <div className="flex shrink-0 flex-wrap gap-2 lg:w-36 lg:flex-col">
+                        <div className="no-print flex shrink-0 flex-wrap gap-2 lg:w-36 lg:flex-col">
                           <Button
                             size="sm"
                             variant={item.mastered ? 'secondary' : 'outline'}

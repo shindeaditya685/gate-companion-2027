@@ -1,4 +1,4 @@
-import type { Subject, PhaseInfo, CheatSheetItem } from './types';
+import type { Subject, PhaseInfo, CheatSheetItem, CheatSheetDifficulty } from './types';
 
 // Color palette for subjects — calm blues and earthy accent colors
 // Avoiding indigo/blue defaults; using a custom palette
@@ -433,6 +433,139 @@ export const SEED_CHEAT_SHEET: CheatSheetItem[] = [
   { id: 'cs-oth-7', subject: 'DBMS / TOC / Compiler / Networks', name: 'Subnetting', formula: '\\text{Hosts} = 2^h - 2; \\quad \\text{Subnets} = 2^s', mastered: false, difficulty: 'must-know' },
   { id: 'cs-oth-8', subject: 'DBMS / TOC / Compiler / Networks', name: 'TCP Slow Start', formula: '\\text{cwnd doubles per RTT (grows by 1 per ACK received)}', mastered: false, difficulty: 'frequent' },
   { id: 'cs-oth-9', subject: 'DBMS / TOC / Compiler / Networks', name: 'TCP Congestion Avoidance (AIMD)', formula: '\\text{cwnd += 1/cwnd per ACK (linear growth per RTT). On loss: cwnd /= 2}', mastered: false, difficulty: 'frequent' },
+];
+
+function makeCheatSheetItem(
+  id: string,
+  subject: string,
+  name: string,
+  formula: string,
+  difficulty: CheatSheetDifficulty = 'frequent',
+  tags: string[] = [],
+  extra: Partial<Pick<CheatSheetItem, 'example' | 'code' | 'notes'>> = {}
+): CheatSheetItem {
+  return {
+    id,
+    subject,
+    name,
+    formula,
+    mastered: false,
+    difficulty,
+    tags,
+    ...extra,
+  };
+}
+
+export const SEED_CHEAT_SHEET_V2: CheatSheetItem[] = [
+  makeCheatSheetItem('cs-em-1', 'Engineering Mathematics', 'Eigenvalues', '\\text{sum}=\\operatorname{trace}(A), \\quad \\text{product}=\\det(A)', 'must-know', ['linear-algebra'], { example: 'For [[2,1],[1,2]], trace=4 and det=3, so eigenvalues are 3 and 1.' }),
+  makeCheatSheetItem('cs-em-2', 'Engineering Mathematics', 'Conditional Probability', 'P(A|B)=\\frac{P(A \\cap B)}{P(B)}', 'must-know', ['probability']),
+  makeCheatSheetItem('cs-em-3', 'Engineering Mathematics', 'Bayes Theorem', 'P(A_i|B)=\\frac{P(B|A_i)P(A_i)}{\\sum_j P(B|A_j)P(A_j)}', 'must-know', ['probability']),
+  makeCheatSheetItem('cs-em-4', 'Engineering Mathematics', 'Binomial Distribution', 'P(X=k)=\\binom{n}{k}p^k(1-p)^{n-k}, \\quad E[X]=np, \\quad Var(X)=np(1-p)', 'must-know', ['probability']),
+  makeCheatSheetItem('cs-em-5', 'Engineering Mathematics', 'Poisson Distribution', 'P(X=k)=e^{-\\lambda}\\frac{\\lambda^k}{k!}, \\quad E[X]=Var(X)=\\lambda', 'frequent', ['probability']),
+  makeCheatSheetItem('cs-em-6', 'Engineering Mathematics', 'Normal Distribution Rule', 'P(|X-\\mu|<\\sigma)\\approx0.68, \\quad P(|X-\\mu|<2\\sigma)\\approx0.95, \\quad P(|X-\\mu|<3\\sigma)\\approx0.997', 'frequent', ['statistics']),
+  makeCheatSheetItem('cs-em-7', 'Engineering Mathematics', 'Newton-Raphson', "x_{n+1}=x_n-\\frac{f(x_n)}{f'(x_n)}", 'frequent', ['numerical-methods']),
+  makeCheatSheetItem('cs-em-8', 'Engineering Mathematics', 'Rank Nullity', '\\operatorname{rank}(A)+\\operatorname{nullity}(A)=n', 'must-know', ['linear-algebra']),
+  makeCheatSheetItem('cs-em-9', 'Engineering Mathematics', 'Trapezoidal Rule', '\\int_a^b f(x)dx \\approx \\frac{h}{2}\\left[y_0+y_n+2\\sum_{i=1}^{n-1}y_i\\right]', 'frequent', ['numerical-methods']),
+  makeCheatSheetItem('cs-em-10', 'Engineering Mathematics', "Simpson's 1/3 Rule", '\\int_a^b f(x)dx \\approx \\frac{h}{3}\\left[y_0+y_n+4\\sum y_{odd}+2\\sum y_{even}\\right]', 'tricky', ['numerical-methods']),
+  makeCheatSheetItem('cs-em-11', 'Engineering Mathematics', 'Covariance And Correlation', 'Cov(X,Y)=E[XY]-E[X]E[Y], \\quad \\rho=\\frac{Cov(X,Y)}{\\sigma_X\\sigma_Y}', 'frequent', ['statistics']),
+
+  makeCheatSheetItem('cs-dm-1', 'Discrete Mathematics', 'Implication Equivalence', 'p \\to q \\equiv \\neg p \\lor q \\equiv \\neg q \\to \\neg p', 'must-know', ['logic']),
+  makeCheatSheetItem('cs-dm-2', 'Discrete Mathematics', 'Derangements', '!n=n!\\sum_{k=0}^{n}\\frac{(-1)^k}{k!}\\approx\\frac{n!}{e}', 'tricky', ['counting']),
+  makeCheatSheetItem('cs-dm-3', 'Discrete Mathematics', 'Pigeonhole Principle', 'n \\text{ objects in } m \\text{ boxes} \\Rightarrow \\text{some box has at least } \\lceil n/m \\rceil', 'must-know', ['counting']),
+  makeCheatSheetItem('cs-dm-4', 'Discrete Mathematics', "Euler's Formula For Planar Graphs", 'V-E+F=2', 'must-know', ['graph-theory']),
+  makeCheatSheetItem('cs-dm-5', 'Discrete Mathematics', 'Handshaking Lemma', '\\sum_{v\\in V}\\deg(v)=2|E|', 'must-know', ['graph-theory']),
+  makeCheatSheetItem('cs-dm-6', 'Discrete Mathematics', 'Chromatic Polynomial Of Tree', 'P_T(k)=k(k-1)^{n-1}', 'tricky', ['graph-theory']),
+  makeCheatSheetItem('cs-dm-7', 'Discrete Mathematics', 'Inclusion Exclusion', '|A\\cup B\\cup C|=|A|+|B|+|C|-|AB|-|BC|-|CA|+|ABC|', 'must-know', ['counting']),
+  makeCheatSheetItem('cs-dm-8', 'Discrete Mathematics', 'Relations Count', '\\text{relations from } A \\text{ to } B = 2^{|A||B|}', 'frequent', ['relations']),
+  makeCheatSheetItem('cs-dm-9', 'Discrete Mathematics', 'Onto Functions', '\\sum_{i=0}^{m}(-1)^i\\binom{m}{i}(m-i)^n', 'tricky', ['functions']),
+  makeCheatSheetItem('cs-dm-10', 'Discrete Mathematics', "Lagrange's Theorem", 'H\\le G \\Rightarrow |H| \\text{ divides } |G|', 'frequent', ['group-theory']),
+
+  makeCheatSheetItem('cs-dl-1', 'Digital Logic', "2s Complement Range", '-2^{n-1} \\text{ to } 2^{n-1}-1', 'must-know', ['number-system']),
+  makeCheatSheetItem('cs-dl-2', 'Digital Logic', 'IEEE 754 Single Precision', '\\text{sign}=1, \\quad \\text{exponent}=8 \\text{ with bias }127, \\quad \\text{mantissa}=23', 'frequent', ['floating-point']),
+  makeCheatSheetItem('cs-dl-6', 'Digital Logic', 'Boolean Algebra Core Laws', 'A+AB=A, \\quad A(A+B)=A, \\quad A+\\bar{A}B=A+B', 'must-know', ['boolean-algebra']),
+  makeCheatSheetItem('cs-dl-7', 'Digital Logic', 'De Morgan Laws', '\\overline{AB}=\\bar A+\\bar B, \\quad \\overline{A+B}=\\bar A\\bar B', 'must-know', ['boolean-algebra']),
+  makeCheatSheetItem('cs-dl-8', 'Digital Logic', 'Full Adder', 'S=A\\oplus B\\oplus C_{in}, \\quad C_{out}=AB+BC_{in}+AC_{in}', 'must-know', ['combinational']),
+  makeCheatSheetItem('cs-dl-9', 'Digital Logic', 'Flip-Flop Excitation', '\\text{JK: }0\\to1:J=1, \\; 1\\to0:K=1; \\quad \\text{T toggles when }T=1', 'frequent', ['sequential']),
+  makeCheatSheetItem('cs-dl-10', 'Digital Logic', 'K-Map Group Sizes', '\\text{groups are powers of two: }1,2,4,8,16; \\quad \\text{use largest groups first}', 'must-know', ['k-map']),
+
+  makeCheatSheetItem('cs-dl-3', 'Computer Organisation & Architecture', 'Average Memory Access Time', 'AMAT=t_{hit}+\\text{miss rate}\\times\\text{miss penalty}', 'must-know', ['cache']),
+  makeCheatSheetItem('cs-dl-4', 'Computer Organisation & Architecture', 'Pipeline Speedup', 'S\\approx\\frac{k n \\tau}{(k+n-1)\\tau}', 'frequent', ['pipeline']),
+  makeCheatSheetItem('cs-dl-5', 'Computer Organisation & Architecture', "Amdahl's Law", 'S=\\frac{1}{(1-p)+p/N}', 'must-know', ['performance']),
+  makeCheatSheetItem('cs-coa-1', 'Computer Organisation & Architecture', 'CPU Execution Time', 'T=IC\\times CPI\\times\\text{clock cycle time}=\\frac{IC\\times CPI}{\\text{clock rate}}', 'must-know', ['performance']),
+  makeCheatSheetItem('cs-coa-2', 'Computer Organisation & Architecture', 'CPI With Instruction Mix', 'CPI_{avg}=\\sum_i f_i\\times CPI_i', 'must-know', ['performance']),
+  makeCheatSheetItem('cs-coa-3', 'Computer Organisation & Architecture', 'Cache Address Split', '\\text{address bits}=\\text{tag}+\\text{index}+\\text{block offset}', 'must-know', ['cache']),
+  makeCheatSheetItem('cs-coa-4', 'Computer Organisation & Architecture', 'Set Associative Cache Sets', '\\text{sets}=\\frac{\\text{cache size}}{\\text{block size}\\times\\text{associativity}}', 'frequent', ['cache']),
+  makeCheatSheetItem('cs-coa-5', 'Computer Organisation & Architecture', 'Virtual Address Split', '\\text{virtual address}=\\text{virtual page number}+\\text{page offset}', 'frequent', ['virtual-memory']),
+
+  makeCheatSheetItem('cs-al-3', 'Programming & Data Structures', 'BST Operations', '\\text{search/insert/delete}=O(h), \\quad \\text{balanced}=O(\\log n), \\quad \\text{skewed}=O(n)', 'must-know', ['tree'], { code: 'Node* search(Node* root, int key) {\n  if (!root || root->key == key) return root;\n  return key < root->key ? search(root->left, key) : search(root->right, key);\n}' }),
+  makeCheatSheetItem('cs-al-4', 'Programming & Data Structures', 'Hashing Load Factor', '\\alpha=\\frac{n}{m}; \\quad \\text{chaining avg}=O(1+\\alpha)', 'frequent', ['hashing']),
+  makeCheatSheetItem('cs-ds-1', 'Programming & Data Structures', 'Row Major Address', 'addr(A[i][j])=base+w((i-L_r)n+(j-L_c))', 'must-know', ['arrays']),
+  makeCheatSheetItem('cs-ds-2', 'Programming & Data Structures', 'Column Major Address', 'addr(A[i][j])=base+w((j-L_c)m+(i-L_r))', 'frequent', ['arrays']),
+  makeCheatSheetItem('cs-ds-3', 'Programming & Data Structures', 'Heap Index Rules', '\\text{parent}(i)=\\lfloor(i-1)/2\\rfloor, \\quad left=2i+1, \\quad right=2i+2', 'must-know', ['heap']),
+  makeCheatSheetItem('cs-ds-4', 'Programming & Data Structures', 'AVL Height Recurrence', 'N(h)=1+N(h-1)+N(h-2), \\quad h=O(\\log n)', 'tricky', ['avl']),
+  makeCheatSheetItem('cs-ds-5', 'Programming & Data Structures', 'Graph Storage', '\\text{matrix}=O(V^2), \\quad \\text{list}=O(V+E)', 'must-know', ['graphs']),
+  makeCheatSheetItem('cs-ds-6', 'Programming & Data Structures', 'DFS And BFS Time', 'O(V+E) \\text{ with adjacency list}', 'must-know', ['graphs']),
+
+  makeCheatSheetItem('cs-al-1', 'Algorithms', 'Master Theorem', 'T(n)=aT(n/b)+f(n), \\quad \\text{compare } f(n) \\text{ with } n^{\\log_b a}', 'must-know', ['recurrence'], { code: 'Case 1: f(n)=O(n^(log_b a - eps)) => T(n)=Theta(n^(log_b a))\nCase 2: f(n)=Theta(n^(log_b a) log^k n) => T(n)=Theta(n^(log_b a) log^(k+1)n)\nCase 3: f(n)=Omega(n^(log_b a + eps)) and regularity holds => T(n)=Theta(f(n))' }),
+  makeCheatSheetItem('cs-al-2', 'Algorithms', 'Sorting Complexities', '\\text{merge}=O(n\\log n), \\quad \\text{quick avg}=O(n\\log n), \\quad \\text{quick worst}=O(n^2), \\quad \\text{heap}=O(n\\log n)', 'must-know', ['sorting']),
+  makeCheatSheetItem('cs-al-5', 'Algorithms', 'Dijkstra', 'O((V+E)\\log V) \\text{ with binary heap, non-negative edges only}', 'must-know', ['shortest-path']),
+  makeCheatSheetItem('cs-al-6', 'Algorithms', 'Bellman-Ford', 'O(VE), \\quad \\text{relax all edges } V-1 \\text{ times}', 'frequent', ['shortest-path']),
+  makeCheatSheetItem('cs-al-7', 'Algorithms', 'Floyd-Warshall', 'O(V^3), \\quad d[i][j]=\\min(d[i][j], d[i][k]+d[k][j])', 'frequent', ['shortest-path']),
+  makeCheatSheetItem('cs-al-8', 'Algorithms', '0/1 Knapsack DP', 'O(nW), \\quad dp[w]=\\max(dp[w], dp[w-w_i]+v_i)', 'must-know', ['dp']),
+  makeCheatSheetItem('cs-al-9', 'Algorithms', 'LCS DP', 'dp[i][j]=1+dp[i-1][j-1] \\text{ if match, else } \\max(dp[i-1][j],dp[i][j-1])', 'frequent', ['dp']),
+  makeCheatSheetItem('cs-al-10', 'Algorithms', 'Matrix Chain Multiplication', 'dp[i][j]=\\min_{i\\le k<j}(dp[i][k]+dp[k+1][j]+p_{i-1}p_kp_j)', 'tricky', ['dp']),
+  makeCheatSheetItem('cs-al-11', 'Algorithms', 'Kruskal MST', 'O(E\\log E), \\quad \\text{sort edges and union components}', 'must-know', ['mst']),
+  makeCheatSheetItem('cs-al-12', 'Algorithms', 'NP-Completeness Pattern', 'A\\in NP \\text{ and } B\\le_p A \\text{ for known NP-complete }B \\Rightarrow A\\text{ is NP-complete}', 'tricky', ['np-completeness']),
+
+  makeCheatSheetItem('cs-oth-4', 'Theory of Computation', 'Regular Language Closure', '\\text{closed under union, intersection, complement, concatenation, star, reversal}', 'must-know', ['regular-language']),
+  makeCheatSheetItem('cs-oth-5', 'Theory of Computation', 'Pumping Lemma For Regular Languages', '\\exists p\\;\\forall w\\in L, |w|\\ge p: w=xyz, |xy|\\le p, |y|>0, \\forall i\\ge0:xy^iz\\in L', 'must-know', ['pumping-lemma']),
+  makeCheatSheetItem('cs-toc-1', 'Theory of Computation', 'DFA Transition Function', '\\delta:Q\\times\\Sigma\\to Q', 'must-know', ['dfa']),
+  makeCheatSheetItem('cs-toc-2', 'Theory of Computation', 'NFA To DFA Bound', 'n \\text{ NFA states } \\Rightarrow \\text{ up to }2^n \\text{ DFA states}', 'must-know', ['nfa']),
+  makeCheatSheetItem('cs-toc-3', 'Theory of Computation', "Arden's Lemma", 'R=Q+RP \\Rightarrow R=QP^* \\quad \\text{if }\\epsilon\\notin P', 'frequent', ['regular-expression']),
+  makeCheatSheetItem('cs-toc-4', 'Theory of Computation', 'CNF Form', 'A\\to BC \\text{ or } A\\to a \\quad (S\\to\\epsilon \\text{ only if needed})', 'frequent', ['cfg']),
+  makeCheatSheetItem('cs-toc-5', 'Theory of Computation', 'Decidability Hierarchy', '\\text{regular}\\subset\\text{CFL}\\subset\\text{decidable}\\subset\\text{Turing-recognizable}', 'must-know', ['decidability']),
+
+  makeCheatSheetItem('cs-oth-6', 'Compiler Design', 'LL(1) Conditions', '\\text{no left recursion, no common prefix, no FIRST/FIRST or FIRST/FOLLOW conflict}', 'must-know', ['parsing']),
+  makeCheatSheetItem('cs-cd-1', 'Compiler Design', 'FIRST Set Rule', 'FIRST(\\alpha\\beta)=FIRST(\\alpha)-\\{\\epsilon\\}; \\text{ if }\\epsilon\\in FIRST(\\alpha), \\text{ add }FIRST(\\beta)', 'must-know', ['first-follow']),
+  makeCheatSheetItem('cs-cd-2', 'Compiler Design', 'FOLLOW Set Rule', 'A\\to\\alpha B\\beta \\Rightarrow FIRST(\\beta)-\\{\\epsilon\\}\\subseteq FOLLOW(B)', 'must-know', ['first-follow']),
+  makeCheatSheetItem('cs-cd-3', 'Compiler Design', 'LR(0) Closure', 'A\\to\\alpha .B\\beta \\Rightarrow \\text{add }B\\to .\\gamma \\text{ for each }B\\to\\gamma', 'frequent', ['lr-parsing']),
+  makeCheatSheetItem('cs-cd-4', 'Compiler Design', 'SLR Conflict Check', '\\text{reduce } A\\to\\alpha \\text{ on } FOLLOW(A)', 'tricky', ['lr-parsing']),
+  makeCheatSheetItem('cs-cd-5', 'Compiler Design', 'Three Address Code Quadruple', '(op,arg1,arg2,result)', 'frequent', ['intermediate-code']),
+  makeCheatSheetItem('cs-cd-6', 'Compiler Design', 'Lexical Analyzer Pipeline', '\\text{regex}\\to\\text{NFA}\\to\\text{DFA}\\to\\text{minimized DFA}', 'must-know', ['lexical-analysis']),
+
+  makeCheatSheetItem('cs-os-1', 'Operating System', 'Belady Anomaly', '\\text{FIFO may have more page faults with more frames; stack algorithms do not}', 'frequent', ['paging']),
+  makeCheatSheetItem('cs-os-2', 'Operating System', "Banker's Algorithm", '\\text{Need}=\\text{Max}-\\text{Allocation}; \\quad \\text{safe if Need}\\le\\text{Work}', 'must-know', ['deadlock']),
+  makeCheatSheetItem('cs-os-3', 'Operating System', 'TLB Effective Access Time', 'EAT=h(t_{TLB}+t_M)+(1-h)(t_{TLB}+2t_M)', 'must-know', ['memory-management']),
+  makeCheatSheetItem('cs-os-4', 'Operating System', 'CPU Scheduling Metrics', 'TAT=CT-AT, \\quad WT=TAT-BT, \\quad RT=\\text{first response}-AT', 'must-know', ['scheduling']),
+  makeCheatSheetItem('cs-os-5', 'Operating System', 'Semaphore Wait Signal', 'wait(S):S--; \\text{ block if }S<0; \\quad signal(S):S++; \\text{ wake if }S\\le0', 'must-know', ['synchronization']),
+  makeCheatSheetItem('cs-os-6', 'Operating System', 'Deadlock Conditions', '\\text{mutual exclusion + hold and wait + no preemption + circular wait}', 'must-know', ['deadlock']),
+  makeCheatSheetItem('cs-os-7', 'Operating System', 'Page Table Size', '\\text{entries}=\\frac{\\text{virtual address space}}{\\text{page size}}, \\quad \\text{size}=\\text{entries}\\times\\text{PTE size}', 'frequent', ['paging']),
+
+  makeCheatSheetItem('cs-oth-1', 'Databases', 'Normal Forms', '\\text{1NF atomic; 2NF no partial dependency; 3NF no transitive dependency; BCNF every determinant is superkey}', 'must-know', ['normalization']),
+  makeCheatSheetItem('cs-oth-2', 'Databases', 'Conflict Serialisability', '\\text{precedence graph acyclic}\\iff\\text{conflict serializable}', 'must-know', ['transactions']),
+  makeCheatSheetItem('cs-oth-3', 'Databases', 'Strict 2PL', '\\text{growing + shrinking, exclusive locks released at commit}', 'frequent', ['transactions']),
+  makeCheatSheetItem('cs-db-1', 'Databases', 'Attribute Closure', 'X^+=\\text{all attributes derivable from }X\\text{ using FDs}', 'must-know', ['functional-dependency']),
+  makeCheatSheetItem('cs-db-2', 'Databases', 'Candidate Key Test', 'X \\text{ is key iff }X^+=R\\text{ and no proper subset determines }R', 'must-know', ['functional-dependency']),
+  makeCheatSheetItem('cs-db-3', 'Databases', 'Lossless Join Test', 'R_1\\bowtie R_2 \\text{ lossless iff }(R_1\\cap R_2)\\to R_1 \\text{ or }(R_1\\cap R_2)\\to R_2', 'tricky', ['decomposition']),
+  makeCheatSheetItem('cs-db-4', 'Databases', 'B+ Tree Height', 'h\\approx\\lceil\\log_f L\\rceil+1', 'frequent', ['indexing']),
+  makeCheatSheetItem('cs-db-5', 'Databases', 'Selection Cardinality', '|\\sigma_{A=c}(R)|\\approx\\frac{|R|}{V(R,A)}', 'frequent', ['query-processing']),
+
+  makeCheatSheetItem('cs-oth-7', 'Computer Networks', 'Subnet Hosts', '\\text{usable hosts}=2^h-2, \\quad \\text{subnets}=2^s', 'must-know', ['ip-addressing']),
+  makeCheatSheetItem('cs-oth-8', 'Computer Networks', 'TCP Slow Start', '\\text{cwnd doubles every RTT until threshold or loss}', 'frequent', ['tcp']),
+  makeCheatSheetItem('cs-oth-9', 'Computer Networks', 'TCP Congestion Avoidance', '\\text{AIMD: cwnd grows linearly; on loss, cwnd is reduced}', 'frequent', ['tcp']),
+  makeCheatSheetItem('cs-cn-1', 'Computer Networks', 'Bandwidth Delay Product', 'BDP=\\text{bandwidth}\\times RTT', 'must-know', ['transport']),
+  makeCheatSheetItem('cs-cn-2', 'Computer Networks', 'Sliding Window Utilization', 'U=\\min\\left(1,\\frac{W}{1+2a}\\right), \\quad a=\\frac{T_p}{T_t}', 'tricky', ['data-link']),
+  makeCheatSheetItem('cs-cn-3', 'Computer Networks', 'CRC Check', '\\text{append }r\\text{ zeros, divide by generator of degree }r, \\text{ append remainder}', 'frequent', ['error-control']),
+  makeCheatSheetItem('cs-cn-4', 'Computer Networks', 'Hamming Distance', 'd_{min}\\ge d+1 \\text{ detects }d; \\quad d_{min}\\ge2t+1 \\text{ corrects }t', 'must-know', ['error-control']),
+  makeCheatSheetItem('cs-cn-5', 'Computer Networks', 'IP Fragment Offset', '\\text{fragment offset is measured in 8-byte units}', 'frequent', ['ip']),
+
+  makeCheatSheetItem('cs-ap-1', 'General Aptitude', 'Percentage Change', '\\%\\text{ change}=\\frac{\\text{new}-\\text{old}}{\\text{old}}\\times100', 'must-know', ['quant']),
+  makeCheatSheetItem('cs-ap-2', 'General Aptitude', 'Successive Percentage Change', 'x\\% \\text{ then } y\\% \\Rightarrow x+y+\\frac{xy}{100}', 'frequent', ['quant']),
+  makeCheatSheetItem('cs-ap-3', 'General Aptitude', 'Simple Interest', 'SI=\\frac{PRT}{100}', 'must-know', ['quant']),
+  makeCheatSheetItem('cs-ap-4', 'General Aptitude', 'Compound Interest', 'A=P\\left(1+\\frac{r}{100}\\right)^t', 'must-know', ['quant']),
+  makeCheatSheetItem('cs-ap-5', 'General Aptitude', 'Time And Work', '\\text{if A finishes in }x\\text{ days, rate}=1/x', 'frequent', ['quant']),
+  makeCheatSheetItem('cs-ap-6', 'General Aptitude', 'Speed Distance Time', 'D=ST, \\quad \\text{average speed}=\\frac{\\text{total distance}}{\\text{total time}}', 'must-know', ['quant']),
+  makeCheatSheetItem('cs-ap-7', 'General Aptitude', 'Permutation And Combination', '{}^nP_r=\\frac{n!}{(n-r)!}, \\quad {}^nC_r=\\frac{n!}{r!(n-r)!}', 'must-know', ['quant']),
 ];
 
 // 180-minute exam day strategy

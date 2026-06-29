@@ -6,7 +6,7 @@ import type {
   Subject, SubjectStatus, SpacedRepetitionItem, MockEntry,
   BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem,
 } from './types';
-import { SEED_SUBJECTS, PHASES, SEED_CHEAT_SHEET } from './data';
+import { SEED_SUBJECTS, PHASES, SEED_CHEAT_SHEET_V2 } from './data';
 
 function makeDueDates(learnedDate: string) {
   const d = new Date(learnedDate);
@@ -24,6 +24,28 @@ function makeDueDates(learnedDate: string) {
   };
 }
 
+function mergeCheatSheetItems(existingItems: CheatSheetItem[] = []): CheatSheetItem[] {
+  const existingById = new Map(existingItems.map((item) => [item.id, item]));
+  const seedIds = new Set(SEED_CHEAT_SHEET_V2.map((item) => item.id));
+
+  const upgradedSeeds = SEED_CHEAT_SHEET_V2.map((seedItem) => {
+    const existing = existingById.get(seedItem.id);
+    if (!existing) return seedItem;
+
+    return {
+      ...seedItem,
+      mastered: existing.mastered ?? seedItem.mastered,
+      notes: existing.notes ?? seedItem.notes,
+      aiExplanation: existing.aiExplanation ?? seedItem.aiExplanation,
+      isUserAdded: existing.isUserAdded ?? seedItem.isUserAdded,
+    };
+  });
+
+  const userItems = existingItems.filter((item) => item.isUserAdded || !seedIds.has(item.id));
+
+  return [...upgradedSeeds, ...userItems];
+}
+
 const INITIAL_STATE = {
   startDate: '2026-07-01',
   gateDate: '2027-02-06',
@@ -32,7 +54,7 @@ const INITIAL_STATE = {
   pyqAttempts: [] as PYQAttempt[],
   mocks: [] as MockEntry[],
   checkIns: [] as BurnoutCheckIn[],
-  cheatSheetItems: SEED_CHEAT_SHEET,
+  cheatSheetItems: SEED_CHEAT_SHEET_V2,
 };
 
 export const usePrepStore = create<PrepState>()(
@@ -191,7 +213,7 @@ export const usePrepStore = create<PrepState>()(
           ),
         })),
 
-      resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS }),
+      resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2 }),
 
       loadFromMongo: (data) =>
         set({
@@ -202,12 +224,19 @@ export const usePrepStore = create<PrepState>()(
           pyqAttempts: data.pyqAttempts,
           mocks: data.mocks,
           checkIns: data.checkIns,
-          cheatSheetItems: data.cheatSheetItems ?? SEED_CHEAT_SHEET,
+          cheatSheetItems: mergeCheatSheetItems(data.cheatSheetItems ?? []),
         }),
     }),
     {
       name: 'gate-prep-store-v1',
-      version: 1,
+      version: 2,
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<PrepState>;
+        return {
+          ...state,
+          cheatSheetItems: mergeCheatSheetItems(state.cheatSheetItems ?? []),
+        };
+      },
     }
   )
 );

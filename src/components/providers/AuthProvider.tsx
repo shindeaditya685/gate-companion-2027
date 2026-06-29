@@ -8,7 +8,10 @@ import { Label } from '@/components/ui/label'
 import { AlertCircle, Lock, GraduationCap, UserPlus, LogIn } from 'lucide-react'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [authed, setAuthed] = useState<boolean | null>(null)
+  const [authed, setAuthed] = useState<boolean | null>(() => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('auth-token') ? null : false
+  })
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null)
   const [mode, setMode] = useState<'login' | 'register'>('login')
 
@@ -20,9 +23,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem('auth-token')
-    if (!token) { setAuthed(false); return }
+    if (!token) return
 
-    fetch(`/api/auth/verify?token=${token}`)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+
+    fetch(`/api/auth/verify?token=${token}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => {
         if (d.valid) {
@@ -33,7 +39,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthed(false)
         }
       })
-      .catch(() => setAuthed(false))
+      .catch(() => {
+        localStorage.removeItem('auth-token')
+        setAuthed(false)
+      })
+      .finally(() => clearTimeout(timeout))
+
+    return () => {
+      clearTimeout(timeout)
+      controller.abort()
+    }
   }, [])
 
   const handleSubmit = useCallback(async () => {

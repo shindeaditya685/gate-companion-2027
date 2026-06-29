@@ -1,25 +1,17 @@
-import { NextResponse } from 'next/server';
-import { explainFormula } from '@/lib/groq';
+import { NextRequest, NextResponse } from 'next/server'
+import { explainFormula } from '@/lib/groq'
 
-export async function POST(request: Request) {
-  const body = (await request.json()) as {
-    name?: string;
-    formula?: string;
-    subject?: string;
-  };
+export async function POST(req: NextRequest) {
+  try {
+    const { name, formula, subject } = await req.json()
 
-  const name = body.name?.trim();
-  const formula = body.formula?.trim();
-  const subject = body.subject?.trim();
+    if (!name || !formula) {
+      return NextResponse.json({ error: 'name and formula required' }, { status: 400 })
+    }
 
-  if (!name || !formula || !subject) {
-    return NextResponse.json(
-      { error: 'name, formula, and subject are required.' },
-      { status: 400 }
-    );
+    const explanation = await explainFormula(name, formula, subject || '')
+    return NextResponse.json({ explanation })
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })
   }
-
-  const explanation = await explainFormula(name, formula, subject);
-
-  return NextResponse.json({ explanation });
 }
