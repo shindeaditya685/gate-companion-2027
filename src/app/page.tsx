@@ -17,6 +17,7 @@ import { PSUTrackerView } from '@/components/sections/psu-tracker';
 import { SelfCareView } from '@/components/sections/self-care';
 import { StudyTimer } from '@/components/sections/study-timer';
 import { TodoPanel } from '@/components/sections/todo-panel';
+import { CalculatorToggle } from '@/components/calculator/calculator-toggle';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
 
@@ -118,6 +119,7 @@ export default function Home() {
             <TodoPanel />
           </TabsContent>
         </Tabs>
+        <CalculatorToggle />
       </main>
 
       <AppFooter />
