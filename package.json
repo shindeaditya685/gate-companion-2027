@@ -2,11 +2,16 @@
   "name": "nextjs_tailwind_shadcn_ts",
   "version": "0.2.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "dev:webpack": "next dev -H 127.0.0.1 -p 3000 --webpack",
-    "build": "next build && node -e \"const fs=require('fs');const dist='.next-local';fs.cpSync(`${dist}/static`,`${dist}/standalone/${dist}/static`,{recursive:true,force:true});fs.cpSync('public',`${dist}/standalone/public`,{recursive:true,force:true});\"",
-    "start": "node .next-local/standalone/server.js",
+    "build:local": "next build",
+    "start:local": "node .next-local/standalone/server.js",
+    "build": "DEPLOY=true next build",
+    "start": "next start -p ${PORT:-3000}",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -79,6 +84,7 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.10.1",
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
