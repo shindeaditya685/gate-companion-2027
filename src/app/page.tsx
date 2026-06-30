@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   LayoutDashboard, BookOpen, CalendarDays, Repeat,
-  FileBarChart, FileText, Building2, HeartPulse, ScrollText, Timer, CheckSquare,
+  FileBarChart, FileText, Building2, HeartPulse, ScrollText, Timer, CheckSquare, Binary,
 } from 'lucide-react';
 import { Dashboard } from '@/components/sections/dashboard';
 import { SubjectsView } from '@/components/sections/subjects';
@@ -17,6 +17,7 @@ import { PSUTrackerView } from '@/components/sections/psu-tracker';
 import { SelfCareView } from '@/components/sections/self-care';
 import { StudyTimer } from '@/components/sections/study-timer';
 import { TodoPanel } from '@/components/sections/todo-panel';
+import { DSATables } from '@/components/sections/dsa-tables';
 import { CalculatorToggle } from '@/components/calculator/calculator-toggle';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
@@ -29,6 +30,7 @@ const TABS = [
   { id: 'mocks', label: 'Mocks', Icon: FileBarChart },
   { id: 'pyq', label: 'PYQs', Icon: ScrollText },
   { id: 'cheatsheet', label: 'Cheat Sheet', Icon: FileText },
+  { id: 'dsa', label: 'DSA Ref', Icon: Binary },
   { id: 'psu', label: 'PSU Tracker', Icon: Building2 },
   { id: 'selfcare', label: 'Self-Care', Icon: HeartPulse },
   { id: 'timer', label: 'Timer', Icon: Timer },
@@ -105,6 +107,9 @@ export default function Home() {
           </TabsContent>
           <TabsContent value="cheatsheet" className="mt-0">
             <CheatSheetView />
+          </TabsContent>
+          <TabsContent value="dsa" className="mt-0">
+            <DSATables />
           </TabsContent>
           <TabsContent value="psu" className="mt-0">
             <PSUTrackerView />
