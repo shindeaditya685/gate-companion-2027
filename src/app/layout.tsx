@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ["GATE CSE 2027", "BARC", "NIC", "ISRO", "exam preparation", "Computer Science"],
   authors: [{ name: "Personal Study Companion" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/icon.svg",
   },
 };
 
