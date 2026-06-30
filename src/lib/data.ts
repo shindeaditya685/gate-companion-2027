@@ -517,6 +517,100 @@ export const SEED_CHEAT_SHEET_V2: CheatSheetItem[] = [
   makeCheatSheetItem('cs-al-11', 'Algorithms', 'Kruskal MST', 'O(E\\log E), \\quad \\text{sort edges and union components}', 'must-know', ['mst']),
   makeCheatSheetItem('cs-al-12', 'Algorithms', 'NP-Completeness Pattern', 'A\\in NP \\text{ and } B\\le_p A \\text{ for known NP-complete }B \\Rightarrow A\\text{ is NP-complete}', 'tricky', ['np-completeness']),
 
+  // ─── Sorting Algorithms ───
+  makeCheatSheetItem('cs-al-13', 'Algorithms & Data Structures', 'Bubble Sort', 'T(n)=T(n-1)+(n-1)', 'must-know', ['sorting'], { notes: 'Best O(n) (adaptive with flag), Avg/Worst O(n²), Space O(1). Stable, in-place.' }),
+  makeCheatSheetItem('cs-al-14', 'Algorithms & Data Structures', 'Selection Sort', 'T(n)=n(n-1)/2', 'must-know', ['sorting'], { notes: 'Best/Avg/Worst O(n²), Space O(1). Unstable, in-place. Minimum swaps.' }),
+  makeCheatSheetItem('cs-al-15', 'Algorithms & Data Structures', 'Insertion Sort', 'T(n)=T(n-1)+n', 'must-know', ['sorting'], { notes: 'Best O(n), Avg/Worst O(n²), Space O(1). Stable, in-place. Best for nearly sorted arrays.' }),
+  makeCheatSheetItem('cs-al-16', 'Algorithms & Data Structures', 'Merge Sort', 'T(n)=2T(n/2)+n', 'must-know', ['sorting'], { notes: 'Best/Avg/Worst O(n log n), Space O(n). Stable, not in-place. Divide & Conquer.' }),
+  makeCheatSheetItem('cs-al-17', 'Algorithms & Data Structures', 'Quick Sort', 'T(n)=T(k)+T(n-k-1)+n', 'must-know', ['sorting'], { notes: 'Best/Avg O(n log n), Worst O(n²) (pivot smallest/largest), Space O(log n). Unstable, in-place.' }),
+  makeCheatSheetItem('cs-al-18', 'Algorithms & Data Structures', 'Heap Sort', '\\text{build heap}+n\\cdot\\text{heapify}', 'must-know', ['sorting'], { notes: 'Best/Avg/Worst O(n log n), Space O(1). Unstable, in-place. Uses Binary Heap.' }),
+  makeCheatSheetItem('cs-al-19', 'Algorithms & Data Structures', 'Counting Sort', 'T(n)=n+k', 'frequent', ['sorting'], { notes: 'Best/Avg/Worst O(n+k), Space O(k). Stable, not in-place. Only integers.' }),
+  makeCheatSheetItem('cs-al-20', 'Algorithms & Data Structures', 'Radix Sort', 'd\\text{ passes of counting sort}', 'frequent', ['sorting'], { notes: 'Best/Avg/Worst O(d(n+k)), Space O(n+k). Stable, not in-place. Digit-wise.' }),
+  makeCheatSheetItem('cs-al-21', 'Algorithms & Data Structures', 'Bucket Sort', '\\text{distribution}+\\text{sort buckets}', 'frequent', ['sorting'], { notes: 'Best/Avg O(n+k), Worst O(n²), Space O(n+k). Uniform distribution ideal.' }),
+
+  // ─── Searching Algorithms ───
+  makeCheatSheetItem('cs-al-22', 'Algorithms & Data Structures', 'Linear Search', '\\text{sequential search}', 'must-know', ['searching'], { notes: 'Best O(1), Avg/Worst O(n), Space O(1). Works on unsorted array.' }),
+  makeCheatSheetItem('cs-al-23', 'Algorithms & Data Structures', 'Binary Search', 'T(n)=T(n/2)+1', 'must-know', ['searching'], { notes: 'Best O(1), Avg/Worst O(log n), Space O(1). Sorted array required.' }),
+  makeCheatSheetItem('cs-al-24', 'Algorithms & Data Structures', 'Jump Search', '\\text{jump}\\sqrt{n}\\text{ blocks}', 'frequent', ['searching'], { notes: 'Best O(1), Avg/Worst O(√n), Space O(1). Sorted array.' }),
+  makeCheatSheetItem('cs-al-25', 'Algorithms & Data Structures', 'Interpolation Search', '\\text{interpolation formula}', 'tricky', ['searching'], { notes: 'Best O(1), Avg O(log log n), Worst O(n), Space O(1). Uniform distribution.' }),
+  makeCheatSheetItem('cs-al-26', 'Algorithms & Data Structures', 'Exponential Search', '\\text{double index}+\\text{binary search}', 'frequent', ['searching'], { notes: 'Best O(1), Avg/Worst O(log n), Space O(1). For infinite arrays.' }),
+
+  // ─── Graph Algorithms ───
+  makeCheatSheetItem('cs-al-27', 'Algorithms & Data Structures', 'BFS', 'O(V+E)', 'must-know', ['graph'], { notes: 'Best/Avg/Worst O(V+E), Space O(V). Queue-based. Unweighted shortest path.' }),
+  makeCheatSheetItem('cs-al-28', 'Algorithms & Data Structures', 'DFS', 'O(V+E)', 'must-know', ['graph'], { notes: 'Best/Avg/Worst O(V+E), Space O(V). Stack/Recursion. Cycle detection.' }),
+  makeCheatSheetItem('cs-al-29', 'Algorithms & Data Structures', "Dijkstra's Algorithm", 'O((V+E)\\log V)', 'must-know', ['graph', 'shortest-path'], { notes: 'Best/Avg/Worst O((V+E)log V), Space O(V). Priority Queue. Positive weights only.' }),
+  makeCheatSheetItem('cs-al-30', 'Algorithms & Data Structures', 'Bellman-Ford', 'O(VE)', 'frequent', ['graph', 'shortest-path'], { notes: 'Best/Avg/Worst O(VE), Space O(V). Relax V-1 times. Handles negative weights.' }),
+  makeCheatSheetItem('cs-al-31', 'Algorithms & Data Structures', 'Floyd-Warshall', 'O(V^3)', 'frequent', ['graph', 'shortest-path'], { notes: 'Best/Avg/Worst O(V³), Space O(V²). DP. All-pairs shortest path.' }),
+  makeCheatSheetItem('cs-al-32', 'Algorithms & Data Structures', "Prim's Algorithm", 'O(E\\log V)', 'must-know', ['graph', 'mst'], { notes: 'Best/Avg/Worst O(E log V), Space O(V). Greedy. MST.' }),
+  makeCheatSheetItem('cs-al-33', 'Algorithms & Data Structures', "Kruskal's Algorithm", 'O(E\\log E)', 'must-know', ['graph', 'mst'], { notes: 'Best/Avg/Worst O(E log E), Space O(V). Union-Find. MST.' }),
+  makeCheatSheetItem('cs-al-34', 'Algorithms & Data Structures', 'Topological Sort', 'O(V+E)', 'must-know', ['graph'], { notes: 'Best/Avg/Worst O(V+E), Space O(V). DFS or Kahn. DAG only.' }),
+  makeCheatSheetItem('cs-al-35', 'Algorithms & Data Structures', 'Kosaraju SCC', 'O(V+E)', 'tricky', ['graph', 'scc'], { notes: 'Best/Avg/Worst O(V+E), Space O(V). Two DFS passes. Strongly Connected Components.' }),
+  makeCheatSheetItem('cs-al-36', 'Algorithms & Data Structures', 'Tarjan SCC', 'O(V+E)', 'tricky', ['graph', 'scc'], { notes: 'Best/Avg/Worst O(V+E), Space O(V). Single DFS. Low values.' }),
+  makeCheatSheetItem('cs-al-37', 'Algorithms & Data Structures', 'Tarjan Bridges', 'O(V+E)', 'tricky', ['graph'], { notes: 'Best/Avg/Worst O(V+E), Space O(V). Low values. Bridge detection.' }),
+  makeCheatSheetItem('cs-al-38', 'Algorithms & Data Structures', 'Tarjan Articulation Points', 'O(V+E)', 'tricky', ['graph'], { notes: 'Best/Avg/Worst O(V+E), Space O(V). Low values. Cut vertices.' }),
+
+  // ─── Dynamic Programming ───
+  makeCheatSheetItem('cs-al-39', 'Algorithms & Data Structures', 'Fibonacci DP', 'dp[i]=dp[i-1]+dp[i-2]', 'must-know', ['dp'], { notes: 'O(n) time, O(n)/O(1) space. Memoization or tabulation.' }),
+  makeCheatSheetItem('cs-al-40', 'Algorithms & Data Structures', '0/1 Knapsack', 'dp[w]=\\max(dp[w], dp[w-w_i]+v_i)', 'must-know', ['dp'], { notes: 'O(nW) time, O(nW)/O(W) space. Very common in GATE.' }),
+  makeCheatSheetItem('cs-al-41', 'Algorithms & Data Structures', 'LCS (Longest Common Subsequence)', 'dp[i][j]=1+dp[i-1][j-1]\\text{ if match, else }\\max(dp[i-1][j],dp[i][j-1])', 'must-know', ['dp'], { notes: 'O(mn) time, O(mn) space. String problems.' }),
+  makeCheatSheetItem('cs-al-42', 'Algorithms & Data Structures', 'LIS (Longest Increasing Subsequence)', '\\text{binary search on tails}', 'frequent', ['dp'], { notes: 'O(n log n) time, O(n) space. Frequently asked.' }),
+  makeCheatSheetItem('cs-al-43', 'Algorithms & Data Structures', 'Edit Distance', 'dp[i][j]=\\min(\\text{insert},\\text{delete},\\text{substitute})', 'frequent', ['dp'], { notes: 'O(mn) time, O(mn) space. String conversion.' }),
+  makeCheatSheetItem('cs-al-44', 'Algorithms & Data Structures', 'Coin Change', 'dp[a]=\\min(dp[a], dp[a-coin]+1)', 'frequent', ['dp'], { notes: 'O(n·amount) time, O(amount) space. Unbounded knapsack variant.' }),
+  makeCheatSheetItem('cs-al-45', 'Algorithms & Data Structures', 'Rod Cutting', 'dp[i]=\\max(dp[i], price[j]+dp[i-j-1])', 'frequent', ['dp'], { notes: 'O(n²) time, O(n) space. Revenue maximization.' }),
+
+  // ─── Greedy Algorithms ───
+  makeCheatSheetItem('cs-al-46', 'Algorithms & Data Structures', 'Activity Selection', 'O(n\\log n)', 'must-know', ['greedy'], { notes: 'Sort by finish time. O(n log n) time, O(1) space.' }),
+  makeCheatSheetItem('cs-al-47', 'Algorithms & Data Structures', 'Huffman Coding', 'O(n\\log n)', 'frequent', ['greedy'], { notes: 'O(n log n) time, O(n) space. Min Heap.' }),
+  makeCheatSheetItem('cs-al-48', 'Algorithms & Data Structures', 'Fractional Knapsack', 'O(n\\log n)', 'frequent', ['greedy'], { notes: 'O(n log n) time, O(1) space. Ratio sorting.' }),
+  makeCheatSheetItem('cs-al-49', 'Algorithms & Data Structures', 'Job Sequencing', 'O(n\\log n)', 'frequent', ['greedy'], { notes: 'O(n log n) time, O(n) space. Profit maximization.' }),
+
+  // ─── String Algorithms ───
+  makeCheatSheetItem('cs-al-50', 'Algorithms & Data Structures', 'Naive Pattern Matching', 'O(nm)', 'must-know', ['string'], { notes: 'O(nm) time, O(1) space. Basic string matching.' }),
+  makeCheatSheetItem('cs-al-51', 'Algorithms & Data Structures', 'KMP Algorithm', 'O(n+m)', 'frequent', ['string'], { notes: 'O(n+m) time, O(m) space. LPS Array. No backtracking.' }),
+  makeCheatSheetItem('cs-al-52', 'Algorithms & Data Structures', 'Rabin-Karp', 'O(n+m)\\text{ avg}', 'frequent', ['string'], { notes: 'Avg O(n+m), Worst O(nm), O(1) space. Rolling Hash.' }),
+  makeCheatSheetItem('cs-al-53', 'Algorithms & Data Structures', 'Z Algorithm', 'O(n)', 'tricky', ['string'], { notes: 'O(n) time, O(n) space. Pattern matching.' }),
+
+  // ─── Heap Operations ───
+  makeCheatSheetItem('cs-ds-7', 'Algorithms & Data Structures', 'Build Heap', 'O(n)', 'must-know', ['heap'], { notes: 'Build Heap O(n). Insert/Delete/Extract O(log n). Peek O(1).' }),
+  makeCheatSheetItem('cs-ds-8', 'Algorithms & Data Structures', 'Heapify', 'O(\\log n)', 'frequent', ['heap'], { notes: 'O(log n). Maintains heap property.' }),
+
+  // ─── BST ───
+  makeCheatSheetItem('cs-ds-9', 'Algorithms & Data Structures', 'BST Operations', '\\text{search/insert/delete}=O(h)', 'must-know', ['bst'], { notes: 'Best/Avg O(log n), Worst O(n) for skewed tree.' }),
+
+  // ─── Balanced Trees ───
+  makeCheatSheetItem('cs-ds-10', 'Algorithms & Data Structures', 'AVL Tree', 'O(\\log n)', 'frequent', ['avl'], { notes: 'Search/Insert/Delete O(log n). Rotation O(1). Self-balancing.' }),
+  makeCheatSheetItem('cs-ds-11', 'Algorithms & Data Structures', 'Red-Black Tree', 'O(\\log n)', 'frequent', ['rbt'], { notes: 'Search/Insert/Delete O(log n). Used in C++ map, Java TreeMap.' }),
+
+  // ─── Hashing ───
+  makeCheatSheetItem('cs-ds-12', 'Algorithms & Data Structures', 'Hashing Operations', '\\alpha=n/m; \\quad \\text{chaining avg}=O(1+\\alpha)', 'must-know', ['hashing'], { notes: 'Avg O(1), Worst O(n) for all operations. Uniform hashing assumed.' }),
+
+  // ─── Union Find ───
+  makeCheatSheetItem('cs-al-54', 'Algorithms & Data Structures', 'Union-Find (Disjoint Set)', '\\text{Find}=O(\\alpha(n)), \\quad \\text{Union}=O(\\alpha(n))', 'frequent', ['union-find'], { notes: 'α(n) is Inverse Ackermann — effectively constant. Path Compression + Union by Rank.' }),
+
+  // ─── Divide & Conquer ───
+  makeCheatSheetItem('cs-al-55', 'Algorithms & Data Structures', 'Closest Pair of Points', 'O(n\\log n)', 'tricky', ['divide-conquer'], { notes: 'O(n log n). Sweep line + divide and conquer.' }),
+  makeCheatSheetItem('cs-al-56', 'Algorithms & Data Structures', 'Strassen Matrix Multiplication', 'O(n^{2.807})', 'tricky', ['divide-conquer'], { notes: 'O(n^2.807). Divides matrices into 7 subproblems instead of 8.' }),
+
+  // ─── Backtracking ───
+  makeCheatSheetItem('cs-al-57', 'Algorithms & Data Structures', 'N-Queens', 'O(n!)', 'tricky', ['backtracking'], { notes: 'O(n!) worst case. Classic backtracking problem.' }),
+  makeCheatSheetItem('cs-al-58', 'Algorithms & Data Structures', 'Graph Coloring', 'O(m^V)', 'tricky', ['backtracking'], { notes: 'O(m^V) worst case. m colors, V vertices.' }),
+
+  // ─── Miscellaneous ───
+  makeCheatSheetItem('cs-al-59', 'Algorithms & Data Structures', 'Euclid GCD', 'O(\\log(\\min(a,b)))', 'must-know', ['number-theory'], { notes: 'O(log(min(a,b))). Number Theory.' }),
+  makeCheatSheetItem('cs-al-60', 'Algorithms & Data Structures', 'Fast Exponentiation', 'O(\\log n)', 'must-know', ['number-theory'], { notes: 'O(log n). Binary Exponentiation.' }),
+  makeCheatSheetItem('cs-al-61', 'Algorithms & Data Structures', 'Sieve of Eratosthenes', 'O(n\\log\\log n)', 'frequent', ['number-theory'], { notes: 'O(n log log n). Prime number generation.' }),
+  makeCheatSheetItem('cs-al-62', 'Algorithms & Data Structures', "Kadane's Algorithm", 'O(n)', 'must-know', ['array'], { notes: 'O(n). Maximum subarray sum.' }),
+  makeCheatSheetItem('cs-al-63', 'Algorithms & Data Structures', "Moore's Voting Algorithm", 'O(n)', 'frequent', ['array'], { notes: 'O(n). Majority element (>n/2).' }),
+  makeCheatSheetItem('cs-al-64', 'Algorithms & Data Structures', 'Prefix Sum', 'O(n)\\text{ preprocess, } O(1)\\text{ query}', 'must-know', ['array'], { notes: 'O(n) preprocess. Range sum queries.' }),
+  makeCheatSheetItem('cs-al-65', 'Algorithms & Data Structures', 'Sliding Window', 'O(n)', 'frequent', ['array'], { notes: 'O(n). Subarray problems.' }),
+
+  // ─── Key Recurrence Relations ───
+  makeCheatSheetItem('cs-al-66', 'Algorithms & Data Structures', 'Binary Search Recurrence', 'T(n)=T(n/2)+1', 'must-know', ['recurrence'], { notes: 'Solves to O(log n).' }),
+  makeCheatSheetItem('cs-al-67', 'Algorithms & Data Structures', 'Merge Sort Recurrence', 'T(n)=2T(n/2)+n', 'must-know', ['recurrence'], { notes: 'Solves to O(n log n).' }),
+  makeCheatSheetItem('cs-al-68', 'Algorithms & Data Structures', 'Quick Sort Avg Recurrence', 'T(n)=2T(n/2)+n', 'must-know', ['recurrence'], { notes: 'Solves to O(n log n) on average.' }),
+  makeCheatSheetItem('cs-al-69', 'Algorithms & Data Structures', 'Quick Sort Worst Recurrence', 'T(n)=T(n-1)+n', 'must-know', ['recurrence'], { notes: 'Solves to O(n²). Occurs when pivot is min/max.' }),
+  makeCheatSheetItem('cs-al-70', 'Algorithms & Data Structures', 'AVL Height Recurrence', 'N(h)=1+N(h-1)+N(h-2)', 'tricky', ['recurrence', 'avl'], { notes: 'Similar to Fibonacci. h ≈ 1.44 log₂(n).' }),
+
   makeCheatSheetItem('cs-oth-4', 'Theory of Computation', 'Regular Language Closure', '\\text{closed under union, intersection, complement, concatenation, star, reversal}', 'must-know', ['regular-language']),
   makeCheatSheetItem('cs-oth-5', 'Theory of Computation', 'Pumping Lemma For Regular Languages', '\\exists p\\;\\forall w\\in L, |w|\\ge p: w=xyz, |xy|\\le p, |y|>0, \\forall i\\ge0:xy^iz\\in L', 'must-know', ['pumping-lemma']),
   makeCheatSheetItem('cs-toc-1', 'Theory of Computation', 'DFA Transition Function', '\\delta:Q\\times\\Sigma\\to Q', 'must-know', ['dfa']),

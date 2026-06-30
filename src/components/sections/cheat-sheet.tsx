@@ -16,6 +16,7 @@ import {
   Search,
   Sparkles,
   StickyNote,
+  Table2,
   Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -170,7 +171,7 @@ export function CheatSheetView() {
   const [draftDifficulty, setDraftDifficulty] = useState<CheatSheetDifficulty>('must-know');
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState('');
-  const [mode, setMode] = useState<'list' | 'flashcard'>('list');
+  const [mode, setMode] = useState<'list' | 'flashcard' | 'table'>('list');
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
@@ -438,6 +439,14 @@ export function CheatSheetView() {
               >
                 <FlipHorizontal className="h-4 w-4" />
                 Flashcard
+              </Button>
+              <Button
+                variant={mode === 'table' ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => setMode('table')}
+              >
+                <Table2 className="h-4 w-4" />
+                Table
               </Button>
               <Button
                 variant={mode === 'list' ? 'secondary' : 'outline'}
@@ -753,6 +762,76 @@ export function CheatSheetView() {
             })()}
           </CardContent>
         </Card>
+      ) : mode === 'table' ? (
+        <div className="print-area space-y-6">
+          {Object.entries(groupedItems).map(([subject, items]) => (
+            <Card key={subject}>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Table2 className="h-4 w-4 text-emerald-600" />
+                  {subject}
+                  <Badge variant="outline" className="ml-auto text-[10px]">
+                    {items.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Algorithm</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Best</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Average</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Worst</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Space</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Equation / Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {items.map((item) => {
+                        const parts = item.notes ? item.notes.match(/Best\s+([^,]+),\s*(?:Avg\/)?Worst\s+([^,]+),\s*Space\s+([^.]+)\.?\s*(.*)/i) : null;
+                        const best = parts?.[1]?.trim() ?? '—';
+                        const worst = parts?.[2]?.trim() ?? '—';
+                        const space = parts?.[3]?.trim() ?? '—';
+                        const extra = parts?.[4]?.trim() ?? item.notes ?? '';
+                        const avgMatch = item.notes?.match(/Avg\s+([^,]+)/i);
+                        const avg = avgMatch?.[1]?.trim() ?? best;
+                        return (
+                          <tr
+                            key={item.id}
+                            className={cn(
+                              'transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50',
+                              item.mastered && 'bg-emerald-50/50 dark:bg-emerald-950/10'
+                            )}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-slate-900 dark:text-slate-50">{item.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">{best}</td>
+                            <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">{avg}</td>
+                            <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">{worst}</td>
+                            <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">{space}</td>
+                            <td className="px-4 py-3">
+                              <div className="space-y-1">
+                                <div className="max-w-xs"><FormulaBlock formula={item.formula} /></div>
+                                {extra && (
+                                  <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{extra}</p>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (
         <div className="print-area space-y-4">
           {Object.entries(groupedItems).map(([subject, items]) => (
