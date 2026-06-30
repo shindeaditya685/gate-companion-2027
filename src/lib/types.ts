@@ -106,6 +106,16 @@ export interface StudySession {
   durationMinutes: number;
 }
 
+export interface TodoItem {
+  id: string;
+  date: string;
+  text: string;
+  done: boolean;
+  subjectId?: string;
+  order: number;
+  createdAt: string;
+}
+
 export type PrepSnapshot = {
   startDate: string;
   gateDate: string;
@@ -116,6 +126,10 @@ export type PrepSnapshot = {
   checkIns: BurnoutCheckIn[];
   cheatSheetItems: CheatSheetItem[];
   studySessions: StudySession[];
+  timerRunning: boolean;
+  timerStartTime: number;
+  timerElapsed: number;
+  todoItems: TodoItem[];
 };
 
 export interface PrepState {
@@ -128,6 +142,10 @@ export interface PrepState {
   checkIns: BurnoutCheckIn[];
   cheatSheetItems: CheatSheetItem[];
   studySessions: StudySession[];
+  timerRunning: boolean;
+  timerStartTime: number;
+  timerElapsed: number;
+  todoItems: TodoItem[];
   setSubjectStatus: (subjectId: string, status: SubjectStatus) => void;
   toggleTopic: (subjectId: string, topicId: string) => void;
   addSRItem: (item: Omit<SpacedRepetitionItem, 'id'>) => void;
@@ -148,6 +166,12 @@ export interface PrepState {
   updateCheatSheetItem: (id: string, data: Partial<CheatSheetItem>) => void;
   addStudySession: (session: Omit<StudySession, 'id'>) => void;
   removeStudySession: (id: string) => void;
+  setTimerState: (running: boolean, startTime: number, elapsed: number) => void;
+  addTodo: (todo: Omit<TodoItem, 'id'>) => void;
+  toggleTodo: (id: string) => void;
+  updateTodoText: (id: string, text: string) => void;
+  removeTodo: (id: string) => void;
+  reorderTodos: (ids: string[]) => void;
   resetAll: () => void;
   loadFromMongo: (data: PrepSnapshot) => void;
 }

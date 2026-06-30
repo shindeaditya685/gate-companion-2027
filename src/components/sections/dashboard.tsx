@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Target, TrendingUp, Flame, AlertTriangle, ArrowRight, Clock, Timer } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Flame, AlertTriangle, ArrowRight, Clock, Timer, CheckSquare } from 'lucide-react';
 import { usePrepStore, overallCompletion, dueSRCount, recentMockAverage, getCurrentPhase, todayStudyMinutes, weekStudyMinutes } from '@/lib/store';
 import { PHASES, scoreToRank } from '@/lib/data';
 import { useMemo } from 'react';
@@ -14,7 +14,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onNavigate }: DashboardProps) {
-  const { subjects, srItems, mocks, gateDate, startDate, studySessions } = usePrepStore();
+  const { subjects, srItems, mocks, gateDate, startDate, studySessions, todoItems } = usePrepStore();
   const currentPhase = getCurrentPhase(startDate, gateDate);
 
   const completion = overallCompletion(subjects);
@@ -48,10 +48,16 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const weakCount = subjects.filter((s) => s.status === 'weak').length;
   const p0Subjects = subjects.filter((s) => s.priority === 'P0');
 
+  // Today's todos
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayTodos = todoItems.filter((t) => t.date === todayStr);
+  const todosDone = todayTodos.filter((t) => t.done).length;
+  const todosTotal = todayTodos.length;
+
   return (
     <div className="space-y-6">
       {/* Hero stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <Card className="border-emerald-200 dark:border-emerald-900 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-slate-950">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
@@ -126,6 +132,22 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
               {formatTime(weekMin)} this week
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <CheckSquare className="h-3.5 w-3.5" /> Today&rsquo;s Tasks
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-slate-900 dark:text-slate-50">
+              {todosDone}<span className="text-lg text-slate-400">/{todosTotal}</span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              {todosTotal === 0 ? 'No tasks yet' : `${Math.round((todosDone / todosTotal) * 100)}% complete`}
             </p>
           </CardContent>
         </Card>

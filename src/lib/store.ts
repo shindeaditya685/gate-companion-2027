@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import type {
   Subject, SubjectStatus, SpacedRepetitionItem, MockEntry,
-  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem, StudySession, PrepSnapshot,
+  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem, StudySession, PrepSnapshot, TodoItem,
 } from './types';
 import { SEED_SUBJECTS, PHASES, SEED_CHEAT_SHEET_V2 } from './data';
 
@@ -55,6 +55,10 @@ const INITIAL_STATE = {
   checkIns: [] as BurnoutCheckIn[],
   cheatSheetItems: SEED_CHEAT_SHEET_V2,
   studySessions: [] as StudySession[],
+  timerRunning: false,
+  timerStartTime: 0,
+  timerElapsed: 0,
+  todoItems: [] as TodoItem[],
 };
 
 export const usePrepStore = create<PrepState>()(
@@ -228,7 +232,36 @@ export const usePrepStore = create<PrepState>()(
         studySessions: s.studySessions.filter((ss) => ss.id !== id),
       })),
 
-    resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2 }),
+    setTimerState: (running, startTime, elapsed) =>
+      set({ timerRunning: running, timerStartTime: startTime, timerElapsed: elapsed }),
+
+    addTodo: (todo) =>
+      set((s) => ({
+        todoItems: [...s.todoItems, { ...todo, id: `td-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }],
+      })),
+
+    toggleTodo: (id) =>
+      set((s) => ({
+        todoItems: s.todoItems.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+      })),
+
+    updateTodoText: (id, text) =>
+      set((s) => ({
+        todoItems: s.todoItems.map((t) => (t.id === id ? { ...t, text } : t)),
+      })),
+
+    removeTodo: (id) =>
+      set((s) => ({
+        todoItems: s.todoItems.filter((t) => t.id !== id),
+      })),
+
+    reorderTodos: (ids) =>
+      set((s) => {
+        const map = new Map(s.todoItems.map((t) => [t.id, t]));
+        return { todoItems: ids.map((id, i) => ({ ...map.get(id)!, order: i })) };
+      }),
+
+    resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2, todoItems: [] }),
 
     loadFromMongo: (data) =>
       set({
@@ -241,6 +274,10 @@ export const usePrepStore = create<PrepState>()(
         checkIns: data.checkIns,
         cheatSheetItems: mergeCheatSheetItems(data.cheatSheetItems ?? []),
         studySessions: data.studySessions ?? [],
+        timerRunning: data.timerRunning ?? false,
+        timerStartTime: data.timerStartTime ?? 0,
+        timerElapsed: data.timerElapsed ?? 0,
+        todoItems: data.todoItems ?? [],
       }),
   })
 );
@@ -318,6 +355,10 @@ export function getSnapshot(state: PrepState): PrepSnapshot {
     checkIns: state.checkIns,
     cheatSheetItems: state.cheatSheetItems,
     studySessions: state.studySessions,
+    timerRunning: state.timerRunning,
+    timerStartTime: state.timerStartTime,
+    timerElapsed: state.timerElapsed,
+    todoItems: state.todoItems,
   };
 }
 

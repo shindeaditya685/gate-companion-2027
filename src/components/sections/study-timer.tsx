@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,12 +29,29 @@ function formatDuration(minutes: number): string {
 }
 
 export function StudyTimer() {
-  const { subjects, studySessions, addStudySession, removeStudySession } = usePrepStore();
+  const {
+    subjects, studySessions, addStudySession, removeStudySession,
+    timerRunning, timerStartTime, timerElapsed, setTimerState,
+  } = usePrepStore();
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id ?? '');
   const [elapsed, setElapsed] = useState(0);
-  const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const startTimeRef = useRef(0);
+
+  // restore timer on mount if it was running
+  useEffect(() => {
+    if (timerRunning && timerStartTime > 0) {
+      const initial = timerElapsed + Math.floor((Date.now() - timerStartTime) / 1000);
+      setElapsed(initial);
+      intervalRef.current = setInterval(() => {
+        const store = usePrepStore.getState();
+        const total = store.timerElapsed + Math.floor((Date.now() - store.timerStartTime) / 1000);
+        setElapsed(total);
+      }, 1000);
+    }
+    return () => { clearInterval(intervalRef.current); };
+    // only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const todayMin = todayStudyMinutes(studySessions);
   const weekMin = weekStudyMinutes(studySessions);
@@ -51,26 +68,36 @@ export function StudyTimer() {
   const [dh, dm, ds] = formatDisplay(elapsed);
 
   const startTimer = useCallback(() => {
-    if (running) return;
-    startTimeRef.current = Date.now() - elapsed * 1000;
+    if (timerRunning) return;
+    const now = Date.now();
+    setTimerState(true, now, elapsed);
     intervalRef.current = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      const store = usePrepStore.getState();
+      const total = store.timerElapsed + Math.floor((Date.now() - store.timerStartTime) / 1000);
+      setElapsed(total);
     }, 1000);
-    setRunning(true);
-  }, [running, elapsed]);
+  }, [timerRunning, elapsed, setTimerState]);
 
   const stopTimer = useCallback(() => {
+    if (!timerRunning) return;
+    const now = Date.now();
+    const accumulated = timerElapsed + Math.floor((now - timerStartTime) / 1000);
     clearInterval(intervalRef.current);
     intervalRef.current = undefined;
-    setRunning(false);
-  }, []);
+    setTimerState(false, 0, accumulated);
+    setElapsed(accumulated);
+  }, [timerRunning, timerElapsed, timerStartTime, setTimerState]);
 
   const stopAndLog = useCallback(() => {
+    if (!timerRunning) return;
+    const now = Date.now();
+    const accumulated = timerElapsed + Math.floor((now - timerStartTime) / 1000);
     clearInterval(intervalRef.current);
     intervalRef.current = undefined;
-    setRunning(false);
+    setTimerState(false, 0, accumulated);
+    setElapsed(accumulated);
 
-    const minutes = Math.max(1, Math.round(elapsed / 60));
+    const minutes = Math.max(1, Math.round(accumulated / 60));
     const subject = subjects.find((s) => s.id === selectedSubject);
     if (!subject) return;
 
@@ -81,15 +108,16 @@ export function StudyTimer() {
       durationMinutes: minutes,
     });
 
+    setTimerState(false, 0, 0);
     setElapsed(0);
-  }, [elapsed, selectedSubject, subjects, addStudySession]);
+  }, [timerRunning, timerElapsed, timerStartTime, selectedSubject, subjects, addStudySession, setTimerState]);
 
   const resetTimer = useCallback(() => {
     clearInterval(intervalRef.current);
     intervalRef.current = undefined;
-    setRunning(false);
+    setTimerState(false, 0, 0);
     setElapsed(0);
-  }, []);
+  }, [setTimerState]);
 
   const recentSessions = useMemo(() => {
     return [...studySessions].reverse().slice(0, 20);
@@ -140,7 +168,7 @@ export function StudyTimer() {
             <span
               className={[
                 'mx-1 inline-block w-[0.35em] text-center transition-opacity duration-200',
-                running ? 'animate-colon-blink' : 'opacity-100',
+                timerRunning ? 'animate-colon-blink' : 'opacity-100',
               ].join(' ')}
             >
               :
@@ -149,7 +177,7 @@ export function StudyTimer() {
             <span
               className={[
                 'mx-1 inline-block w-[0.35em] text-center transition-opacity duration-200',
-                running ? 'animate-colon-blink' : 'opacity-100',
+                timerRunning ? 'animate-colon-blink' : 'opacity-100',
               ].join(' ')}
             >
               :
@@ -175,7 +203,7 @@ export function StudyTimer() {
             </div>
 
             <div className="flex items-center gap-2">
-              {!running ? (
+              {!timerRunning ? (
                 <Button
                   onClick={startTimer}
                   disabled={!selectedSubject}
@@ -213,7 +241,7 @@ export function StudyTimer() {
           </div>
 
           {/* Running indicator */}
-          {running && (
+          {timerRunning && (
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               <span className="text-[10px] font-medium uppercase tracking-widest text-emerald-400/70">
@@ -221,7 +249,7 @@ export function StudyTimer() {
               </span>
             </div>
           )}
-          {!running && elapsed > 0 && elapsed < 10 && (
+          {!timerRunning && elapsed > 0 && elapsed < 10 && (
             <p className="text-[11px] text-slate-500">Log requires at least 10 seconds</p>
           )}
         </div>

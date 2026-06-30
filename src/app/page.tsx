@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   LayoutDashboard, BookOpen, CalendarDays, Repeat,
-  FileBarChart, FileText, Building2, HeartPulse, ScrollText, Timer,
+  FileBarChart, FileText, Building2, HeartPulse, ScrollText, Timer, CheckSquare,
 } from 'lucide-react';
 import { Dashboard } from '@/components/sections/dashboard';
 import { SubjectsView } from '@/components/sections/subjects';
@@ -16,6 +16,7 @@ import { CheatSheetView } from '@/components/sections/cheat-sheet';
 import { PSUTrackerView } from '@/components/sections/psu-tracker';
 import { SelfCareView } from '@/components/sections/self-care';
 import { StudyTimer } from '@/components/sections/study-timer';
+import { TodoPanel } from '@/components/sections/todo-panel';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
 
@@ -30,6 +31,7 @@ const TABS = [
   { id: 'psu', label: 'PSU Tracker', Icon: Building2 },
   { id: 'selfcare', label: 'Self-Care', Icon: HeartPulse },
   { id: 'timer', label: 'Timer', Icon: Timer },
+  { id: 'todos', label: 'Todos', Icon: CheckSquare },
 ] as const;
 
 export default function Home() {
@@ -111,6 +113,9 @@ export default function Home() {
           </TabsContent>
           <TabsContent value="timer" className="mt-0">
             <StudyTimer />
+          </TabsContent>
+          <TabsContent value="todos" className="mt-0">
+            <TodoPanel />
           </TabsContent>
         </Tabs>
       </main>
