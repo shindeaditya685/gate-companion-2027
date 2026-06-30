@@ -28,9 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!token) return
 
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 5000)
+    const timeout = setTimeout(() => controller.abort(), 10000)
 
-    fetch(`/api/auth/verify?token=${token}`, { signal: controller.signal })
+    fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+      signal: controller.signal,
+    })
       .then((r) => r.json())
       .then((d) => {
         if (d.valid) {
@@ -42,8 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {
-        localStorage.removeItem('auth-token')
-        setAuthed(false)
+        // Network error or timeout — server might be cold-starting (Render/Netlify).
+        // Keep the token, show the app anyway. The sync provider will retry.
+        setAuthed(true)
       })
       .finally(() => clearTimeout(timeout))
 

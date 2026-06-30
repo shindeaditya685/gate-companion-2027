@@ -1,15 +1,6 @@
-import { randomUUID, scryptSync, timingSafeEqual } from 'crypto'
+import { randomUUID, scryptSync, timingSafeEqual, createHmac } from 'crypto'
 
 const SECRET = process.env.TOKEN_SECRET || 'default-secret'
-
-const globalForSessions = globalThis as unknown as {
-  _sessions?: Map<string, { userId: string; name: string; email: string }>
-}
-
-function getSessions() {
-  if (!globalForSessions._sessions) globalForSessions._sessions = new Map()
-  return globalForSessions._sessions
-}
 
 export function hashPassword(password: string): string {
   const salt = randomUUID().slice(0, 16)
@@ -27,16 +18,28 @@ export function verifyPassword(password: string, stored: string): boolean {
   }
 }
 
-export function createSession(userId: string, name: string, email: string): string {
-  const token = randomUUID() + '-' + randomUUID()
-  getSessions().set(token, { userId, name, email })
-  return token
+export function createToken(userId: string, name: string, email: string): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
+  const payload = Buffer.from(JSON.stringify({
+    userId, name, email,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days
+  })).toString('base64url')
+  const signature = createHmac('sha256', SECRET).update(`${header}.${payload}`).digest('base64url')
+  return `${header}.${payload}.${signature}`
 }
 
-export function getSession(token: string): { userId: string; name: string; email: string } | null {
-  return getSessions().get(token) ?? null
-}
-
-export function deleteSession(token: string) {
-  getSessions().delete(token)
+export function verifyToken(token: string): { userId: string; name: string; email: string } | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const [header, payload, signature] = parts
+    const expected = createHmac('sha256', SECRET).update(`${header}.${payload}`).digest('base64url')
+    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (data.exp < Math.floor(Date.now() / 1000)) return null
+    return { userId: data.userId, name: data.name, email: data.email }
+  } catch {
+    return null
+  }
 }

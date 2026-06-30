@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
-import { hashPassword, createSession } from '@/lib/auth'
+import { hashPassword, createToken } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Name, email and password required' }, { status: 400 })
     }
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+    if (password.length < 8) {
+      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
     const conn = await connectToDatabase()
@@ -29,13 +29,13 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     })
 
-    const token = createSession(result.insertedId.toString(), name.trim(), normalizedEmail)
+    const token = createToken(result.insertedId.toString(), name.trim(), normalizedEmail)
 
     return NextResponse.json({
       token,
       user: { id: result.insertedId.toString(), name: name.trim(), email: normalizedEmail },
     })
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'Registration failed' }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Registration failed' }, { status: 500 })
   }
 }

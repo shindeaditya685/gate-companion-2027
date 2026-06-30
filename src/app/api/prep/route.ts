@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { getSession } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
 
 const COLLECTION = 'prep-states';
 
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const token = getToken(req)
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const session = getSession(token)
+    const session = verifyToken(token)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const conn = await connectToDatabase();
@@ -35,6 +35,10 @@ export async function GET(req: NextRequest) {
         checkIns: doc.checkIns ?? [],
         cheatSheetItems: doc.cheatSheetItems ?? [],
         studySessions: doc.studySessions ?? [],
+        todoItems: doc.todoItems ?? [],
+        timerRunning: doc.timerRunning ?? false,
+        timerStartTime: doc.timerStartTime ?? 0,
+        timerElapsed: doc.timerElapsed ?? 0,
       },
     });
   } catch (error) {
@@ -47,14 +51,14 @@ export async function PUT(req: NextRequest) {
     const token = getToken(req)
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const session = getSession(token)
+    const session = verifyToken(token)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const conn = await connectToDatabase();
     if (!conn) return NextResponse.json({ error: 'Database not available' }, { status: 503 });
 
     const body = await req.json();
-    const { startDate, gateDate, subjects, srItems, pyqAttempts, mocks, checkIns, cheatSheetItems, studySessions } = body;
+    const { startDate, gateDate, subjects, srItems, pyqAttempts, mocks, checkIns, cheatSheetItems, studySessions, todoItems, timerRunning, timerStartTime, timerElapsed } = body;
 
     const payload = {
       userId: session.userId,
@@ -66,6 +70,10 @@ export async function PUT(req: NextRequest) {
       checkIns: checkIns ?? [],
       cheatSheetItems: cheatSheetItems ?? [],
       studySessions: studySessions ?? [],
+      todoItems: todoItems ?? [],
+      timerRunning: timerRunning ?? false,
+      timerStartTime: timerStartTime ?? 0,
+      timerElapsed: timerElapsed ?? 0,
       updatedAt: new Date(),
     };
 

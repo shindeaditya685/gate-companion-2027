@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
-import { verifyPassword, createSession } from '@/lib/auth'
+import { verifyPassword, createToken } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,10 +21,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
-    const token = createSession(user._id.toString(), user.name, user.email)
+    const token = createToken(user._id.toString(), user.name, user.email)
 
     return NextResponse.json({ token, user: { id: user._id.toString(), name: user.name, email: user.email } })
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'Login failed' }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Login failed' }, { status: 500 })
   }
 }
