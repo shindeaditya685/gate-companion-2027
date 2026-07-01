@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Target, TrendingUp, Flame, AlertTriangle, ArrowRight, Clock, Timer, CheckSquare } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Flame, AlertTriangle, ArrowRight, Clock, Timer, CheckSquare, Sun } from 'lucide-react';
 import { usePrepStore, overallCompletion, dueSRCount, recentMockAverage, getCurrentPhase, todayStudyMinutes, weekStudyMinutes } from '@/lib/store';
 import { PHASES, scoreToRank } from '@/lib/data';
 import { useMemo } from 'react';
@@ -14,7 +14,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onNavigate }: DashboardProps) {
-  const { subjects, srItems, mocks, gateDate, startDate, studySessions, todoItems } = usePrepStore();
+  const { subjects, srItems, mocks, gateDate, startDate, studySessions, todoItems, dailyChallenge: dc } = usePrepStore();
   const currentPhase = getCurrentPhase(startDate, gateDate);
 
   const completion = overallCompletion(subjects);
@@ -54,10 +54,17 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const todosDone = todayTodos.filter((t) => t.done).length;
   const todosTotal = todayTodos.length;
 
+  const currentTest = dc.current;
+  const dcTotal = currentTest?.questions?.length || 0;
+  const dcAnswered = Object.keys(currentTest?.answers || {}).length;
+  const isTodayDC = currentTest?.date === todayStr;
+  const isSubmitted = isTodayDC && currentTest?.submitted;
+  const dcScore = currentTest?.score;
+
   return (
     <div className="space-y-6">
       {/* Hero stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         <Card className="border-emerald-200 dark:border-emerald-900 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-slate-950">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
@@ -135,6 +142,37 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </p>
           </CardContent>
         </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate('daily')}>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-1.5">
+                <Sun className="h-3.5 w-3.5 text-amber-500" /> Daily Challenge
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-slate-900 dark:text-slate-50 flex items-baseline gap-1">
+                {isTodayDC ? dcAnswered : 0}<span className="text-lg text-slate-400">/{dcTotal || 0}</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                {isTodayDC ? (
+                  isSubmitted ? (
+                    <>
+                      GA {dcScore?.gaCorrect || 0}/{dcScore?.gaTotal || 0} · Tech {dcScore?.techCorrect || 0}/{dcScore?.techTotal || 0}
+                    </>
+                  ) : (
+                    `${dcTotal - dcAnswered} unanswered`
+                  )
+                ) : (
+                  'Start today\'s challenge'
+                )}
+                {dc.streak > 0 && (
+                  <span className="inline-flex items-center gap-0.5 text-amber-600 ml-1">
+                    <Flame className="h-3 w-3" />{dc.streak}
+                  </span>
+                )}
+              </p>
+            </CardContent>
+          </Card>
 
         <Card>
           <CardHeader className="pb-2">

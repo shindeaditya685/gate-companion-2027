@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { MongoSyncProvider } from "@/components/providers/MongoSyncProvider";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 
 export const metadata: Metadata = {
   title: "GATE CSE 2027 Companion - Integrated Prep Tracker",
@@ -11,6 +12,12 @@ export const metadata: Metadata = {
   authors: [{ name: "Personal Study Companion" }],
   icons: {
     icon: "/icon.svg",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GATE Prep",
   },
 };
 
@@ -26,7 +33,9 @@ export default function RootLayout({
       >
         <AuthProvider>
           <MongoSyncProvider>
-            {children}
+            <NotificationProvider>
+              {children}
+            </NotificationProvider>
           </MongoSyncProvider>
         </AuthProvider>
         <Toaster />

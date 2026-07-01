@@ -3,9 +3,10 @@
 import { create } from 'zustand';
 import type {
   Subject, SubjectStatus, SpacedRepetitionItem, MockEntry,
-  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem, StudySession, PrepSnapshot, TodoItem,
+  BurnoutCheckIn, PYQAttempt, PrepState, CheatSheetItem, StudySession, PrepSnapshot, TodoItem, DailyChallenge, DailyTest, NotificationPrefs,
 } from './types';
 import { SEED_SUBJECTS, PHASES, SEED_CHEAT_SHEET_V2 } from './data';
+import { DEFAULT_NOTIFICATION_PREFS } from './notifications';
 
 function makeDueDates(learnedDate: string) {
   const d = new Date(learnedDate);
@@ -59,6 +60,13 @@ const INITIAL_STATE = {
   timerStartTime: 0,
   timerElapsed: 0,
   todoItems: [] as TodoItem[],
+  dailyChallenge: {
+    current: null,
+    history: [],
+    streak: 0,
+    calendar: {},
+  },
+  notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
 };
 
 export const usePrepStore = create<PrepState>()(
@@ -261,10 +269,118 @@ export const usePrepStore = create<PrepState>()(
         return { todoItems: ids.map((id, i) => ({ ...map.get(id)!, order: i })) };
       }),
 
-    resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2, todoItems: [] }),
+    setDailyChallenge: (dc) => set({ dailyChallenge: dc }),
 
-    loadFromMongo: (data) =>
-      set({
+    setDailyTest: (test) =>
+      set((s) => ({
+        dailyChallenge: { ...s.dailyChallenge, current: test },
+      })),
+
+    submitDailyTest: (answers) =>
+      set((s) => {
+        const cur = s.dailyChallenge.current;
+        if (!cur) return s;
+        const gaQuestions = cur.questions.filter((q) => q.section === 'ga');
+        const techQuestions = cur.questions.filter((q) => q.section === 'tech');
+        let gaCorrect = 0;
+        let techCorrect = 0;
+        for (const q of cur.questions) {
+          if (answers[q.id] === q.correct) {
+            if (q.section === 'ga') gaCorrect++;
+            else techCorrect++;
+          }
+        }
+        const total = cur.questions.length;
+        const correct = gaCorrect + techCorrect;
+        const submitted: DailyTest = {
+          ...cur,
+          answers,
+          submitted: true,
+          submittedAt: new Date().toISOString(),
+          score: {
+            correct,
+            total,
+            gaCorrect,
+            gaTotal: gaQuestions.length,
+            techCorrect,
+            techTotal: techQuestions.length,
+          },
+        };
+        const cal = { ...s.dailyChallenge.calendar };
+        const answered = Object.keys(answers).length;
+        cal[cur.date] = answered >= total ? 'done' : 'done';
+        const sorted = Object.keys(cal).sort().reverse();
+        let streak = 0;
+        for (const k of sorted) {
+          if (cal[k] === 'done') streak++;
+          else if (cal[k] === 'missed') break;
+        }
+        return {
+          dailyChallenge: {
+            current: submitted,
+            history: [submitted, ...s.dailyChallenge.history],
+            streak,
+            calendar: cal,
+          },
+        };
+      }),
+
+    toggleBookmark: (qid) =>
+      set((s) => {
+        const cur = s.dailyChallenge.current;
+        if (!cur) return s;
+        const bm = cur.bookmarked.includes(qid)
+          ? cur.bookmarked.filter((id) => id !== qid)
+          : [...cur.bookmarked, qid];
+        return {
+          dailyChallenge: {
+            ...s.dailyChallenge,
+            current: { ...cur, bookmarked: bm },
+            history: s.dailyChallenge.history.map((t) =>
+              t.date === cur.date ? { ...t, bookmarked: bm } : t
+            ),
+          },
+        };
+      }),
+
+    updateNotificationPrefs: (prefs) =>
+      set((s) => ({
+        notificationPrefs: { ...s.notificationPrefs, ...prefs },
+      })),
+
+    resetAll: () => set({ ...INITIAL_STATE, subjects: SEED_SUBJECTS, cheatSheetItems: SEED_CHEAT_SHEET_V2, todoItems: [], notificationPrefs: DEFAULT_NOTIFICATION_PREFS }),
+
+    loadFromMongo: (data) => {
+      let dc = data.dailyChallenge;
+      if (dc && 'date' in dc && !('current' in dc)) {
+        const old = dc as any;
+        const gaQ = (old.questions || []).filter((q: any) => q.section === 'ga');
+        const techQ = (old.questions || []).filter((q: any) => q.section === 'tech');
+        dc = {
+          current: old.date
+            ? {
+                date: old.date,
+                dayNumber: 1,
+                questions: old.questions || [],
+                answers: old.answers || {},
+                submitted: old.submitted || false,
+                score: {
+                  correct: (old.gaScore?.correct || 0) + (old.techScore?.correct || 0),
+                  total: (old.gaScore?.total || 0) + (old.techScore?.total || 0),
+                  gaCorrect: old.gaScore?.correct || 0,
+                  gaTotal: old.gaScore?.total || 0,
+                  techCorrect: old.techScore?.correct || 0,
+                  techTotal: old.techScore?.total || 0,
+                },
+                bookmarked: [],
+              }
+            : null,
+          history: [],
+          streak: old.streak || 0,
+          calendar: old.calendar || {},
+        };
+      }
+      return set({
         startDate: data.startDate,
         gateDate: data.gateDate,
         subjects: data.subjects,
@@ -278,7 +394,10 @@ export const usePrepStore = create<PrepState>()(
         timerStartTime: data.timerStartTime ?? 0,
         timerElapsed: data.timerElapsed ?? 0,
         todoItems: data.todoItems ?? [],
-      }),
+        dailyChallenge: dc ?? INITIAL_STATE.dailyChallenge,
+        notificationPrefs: data.notificationPrefs ?? DEFAULT_NOTIFICATION_PREFS,
+      });
+    },
   })
 );
 
@@ -359,6 +478,8 @@ export function getSnapshot(state: PrepState): PrepSnapshot {
     timerStartTime: state.timerStartTime,
     timerElapsed: state.timerElapsed,
     todoItems: state.todoItems,
+    dailyChallenge: state.dailyChallenge,
+    notificationPrefs: state.notificationPrefs,
   };
 }
 

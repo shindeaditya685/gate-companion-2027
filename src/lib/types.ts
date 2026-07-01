@@ -116,6 +116,58 @@ export interface TodoItem {
   createdAt: string;
 }
 
+export interface DailyQuestion {
+  id: string;
+  section: 'ga' | 'tech';
+  type: 'mcq' | 'nat';
+  subtype?: string;
+  subject?: string;
+  topic?: string;
+  question: string;
+  options?: string[];
+  correct: number | number[];
+  explanation: string;
+}
+
+export interface DailyScore {
+  correct: number;
+  total: number;
+  gaCorrect: number;
+  gaTotal: number;
+  techCorrect: number;
+  techTotal: number;
+}
+
+export interface DailyTest {
+  date: string;
+  dayNumber: number;
+  questions: DailyQuestion[];
+  answers: Record<string, number | undefined>;
+  submitted: boolean;
+  submittedAt?: string;
+  score: DailyScore;
+  bookmarked: string[];
+}
+
+export interface DailyChallenge {
+  current: DailyTest | null;
+  history: DailyTest[];
+  streak: number;
+  calendar: Record<string, 'done' | 'missed'>;
+}
+
+export interface NotificationPrefs {
+  enabled: boolean;
+  examCountdown: boolean;
+  dailyChallengeReminder: boolean;
+  dailyChallengeTime: string;
+  streakAlerts: boolean;
+  phaseMilestones: boolean;
+  lastNotifiedMilestones: number[];
+  lastDailyNotifDate: string;
+  lastPhaseNotified: number;
+}
+
 export type PrepSnapshot = {
   startDate: string;
   gateDate: string;
@@ -130,6 +182,8 @@ export type PrepSnapshot = {
   timerStartTime: number;
   timerElapsed: number;
   todoItems: TodoItem[];
+  dailyChallenge: DailyChallenge;
+  notificationPrefs?: NotificationPrefs;
 };
 
 export interface PrepState {
@@ -146,6 +200,8 @@ export interface PrepState {
   timerStartTime: number;
   timerElapsed: number;
   todoItems: TodoItem[];
+  dailyChallenge: DailyChallenge;
+  notificationPrefs: NotificationPrefs;
   setSubjectStatus: (subjectId: string, status: SubjectStatus) => void;
   toggleTopic: (subjectId: string, topicId: string) => void;
   addSRItem: (item: Omit<SpacedRepetitionItem, 'id'>) => void;
@@ -172,6 +228,11 @@ export interface PrepState {
   updateTodoText: (id: string, text: string) => void;
   removeTodo: (id: string) => void;
   reorderTodos: (ids: string[]) => void;
+  setDailyChallenge: (dc: DailyChallenge) => void;
+  setDailyTest: (test: DailyTest) => void;
+  submitDailyTest: (answers: Record<string, number | undefined>) => void;
+  toggleBookmark: (qid: string) => void;
+  updateNotificationPrefs: (prefs: Partial<NotificationPrefs>) => void;
   resetAll: () => void;
   loadFromMongo: (data: PrepSnapshot) => void;
 }

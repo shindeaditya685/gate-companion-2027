@@ -4,8 +4,8 @@ import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, CalendarDays, Repeat,
   FileBarChart, ScrollText, FileText, Binary,
-  Building2, HeartPulse, Timer, CheckSquare, Calculator,
-  X, Menu, GraduationCap, PanelLeftClose, PanelLeft,
+  Building2, HeartPulse, Timer, CheckSquare, Calculator, Sun,
+  X, Menu, GraduationCap, PanelLeftClose, PanelLeft, Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +33,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Practice',
     items: [
+      { id: 'daily', label: 'Daily Challenge', Icon: Sun },
       { id: 'mocks', label: 'Mocks', Icon: FileBarChart },
       { id: 'pyq', label: 'PYQs', Icon: ScrollText },
       { id: 'cheatsheet', label: 'Cheat Sheet', Icon: FileText },
@@ -45,6 +46,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'timer', label: 'Timer', Icon: Timer },
       { id: 'todos', label: 'Todos', Icon: CheckSquare },
       { id: 'calculator', label: 'Calculator', Icon: Calculator },
+      { id: 'notifications', label: 'Reminders', Icon: Bell },
     ],
   },
   {

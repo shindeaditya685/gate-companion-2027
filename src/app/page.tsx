@@ -14,6 +14,8 @@ import { SelfCareView } from '@/components/sections/self-care';
 import { StudyTimer } from '@/components/sections/study-timer';
 import { TodoPanel } from '@/components/sections/todo-panel';
 import { DSATables } from '@/components/sections/dsa-tables';
+import { DailyQuestions } from '@/components/sections/daily-questions';
+import { NotificationSettings } from '@/components/sections/notification-settings';
 import { GateCalculator } from '@/components/calculator/gate-calculator';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
@@ -43,6 +45,8 @@ export default function Home() {
         {activeTab === 'subjects' && <SubjectsView />}
         {activeTab === 'timeline' && <TimelineView />}
         {activeTab === 'spaced' && <SpacedRepetitionView />}
+        {activeTab === 'daily' && <DailyQuestions />}
+        {activeTab === 'notifications' && <NotificationSettings />}
         {activeTab === 'mocks' && <MockTrackerView />}
         {activeTab === 'pyq' && <PYQTrackerView />}
         {activeTab === 'cheatsheet' && <CheatSheetView />}

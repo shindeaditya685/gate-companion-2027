@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
         cheatSheetItems: doc.cheatSheetItems ?? [],
         studySessions: doc.studySessions ?? [],
         todoItems: doc.todoItems ?? [],
+        dailyChallenge: doc.dailyChallenge ?? null,
+        notificationPrefs: doc.notificationPrefs ?? null,
         timerRunning: doc.timerRunning ?? false,
         timerStartTime: doc.timerStartTime ?? 0,
         timerElapsed: doc.timerElapsed ?? 0,
@@ -58,7 +60,7 @@ export async function PUT(req: NextRequest) {
     if (!conn) return NextResponse.json({ error: 'Database not available' }, { status: 503 });
 
     const body = await req.json();
-    const { startDate, gateDate, subjects, srItems, pyqAttempts, mocks, checkIns, cheatSheetItems, studySessions, todoItems, timerRunning, timerStartTime, timerElapsed } = body;
+    const { startDate, gateDate, subjects, srItems, pyqAttempts, mocks, checkIns, cheatSheetItems, studySessions, todoItems, dailyChallenge, notificationPrefs, timerRunning, timerStartTime, timerElapsed } = body;
 
     const payload = {
       userId: session.userId,
@@ -71,6 +73,8 @@ export async function PUT(req: NextRequest) {
       cheatSheetItems: cheatSheetItems ?? [],
       studySessions: studySessions ?? [],
       todoItems: todoItems ?? [],
+      dailyChallenge: dailyChallenge ?? null,
+      notificationPrefs: notificationPrefs ?? null,
       timerRunning: timerRunning ?? false,
       timerStartTime: timerStartTime ?? 0,
       timerElapsed: timerElapsed ?? 0,
