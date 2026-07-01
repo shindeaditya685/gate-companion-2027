@@ -11,8 +11,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/auth-context';
+import { cn } from '@/lib/utils';
 
-export function AppHeader() {
+export function AppHeader({ sidebarCollapsed = false }: { sidebarCollapsed?: boolean }) {
   const { user, logout } = useAuth();
 
   const initials = user
@@ -25,8 +26,12 @@ export function AppHeader() {
     : '?';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-30 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className={cn(
+        'max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between transition-all duration-300',
+        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-68',
+        'lg:pr-8',
+      )}>
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
             <GraduationCap className="h-5 w-5 text-white" />
