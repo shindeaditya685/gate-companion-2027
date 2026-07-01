@@ -97,7 +97,6 @@ export function Sidebar({
         className={cn(
           'fixed top-0 left-0 z-40 h-full bg-slate-900 flex flex-col',
           'transition-all duration-300 ease-out',
-          'sidebar-scroll-container',
           // Mobile: slide in/out
           mobileOpen ? 'translate-x-0 shadow-2xl shadow-slate-900/50' : '-translate-x-full',
           // Desktop: positioned by collapsed state (no translate)
@@ -131,7 +130,7 @@ export function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto space-y-1 px-2 py-3">
+        <nav className="flex-1 overflow-y-auto space-y-1 px-2 py-3 sidebar-scroll">
           {NAV_GROUPS.map((group) => (
             <div key={group.label ?? 'main'}>
               {group.label && (
@@ -232,18 +231,22 @@ export function Sidebar({
       )}
 
       <style>{`
-        .sidebar-scroll-container::-webkit-scrollbar {
+        .sidebar-scroll::-webkit-scrollbar {
           width: 4px;
         }
-        .sidebar-scroll-container::-webkit-scrollbar-track {
+        .sidebar-scroll::-webkit-scrollbar-track {
           background: transparent;
         }
-        .sidebar-scroll-container::-webkit-scrollbar-thumb {
+        .sidebar-scroll::-webkit-scrollbar-thumb {
           background: #334155;
           border-radius: 999px;
         }
-        .sidebar-scroll-container::-webkit-scrollbar-thumb:hover {
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
           background: #475569;
+        }
+        .sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #334155 transparent;
         }
       `}</style>
     </>
