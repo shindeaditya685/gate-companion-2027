@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import { generateWithFallback, MODELS } from '@/lib/nvidia-fallback';
 
-const NV_API = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const NV_KEY = process.env.NV_API_KEY || '';
+const DAILY_MODELS = MODELS.filter((m) =>
+  ['meta/llama-3.1-8b-instruct', 'mistralai/mistral-medium-3.5-128b', 'minimaxai/minimax-m2.7', 'google/diffusiongemma-26b-a4b-it'].includes(m.name)
+);
 
 const GA_PROMPT = `You are a GATE exam expert. Generate exactly 5 General Aptitude questions at GATE difficulty level.
 
@@ -56,40 +57,19 @@ const FALLBACK_QUESTIONS = [
   { id: 'tech-5', type: 'mcq', section: 'tech', subject: 'DBMS', question: 'In a relational database, which normal form requires that every non-prime attribute is fully functionally dependent on the primary key?', options: ['1NF', '2NF', '3NF', 'BCNF'], correct: 1, explanation: '2NF requires 1NF plus every non-prime attribute must be fully functionally dependent on the primary key (no partial dependencies). 3NF requires 2NF plus no transitive dependencies. BCNF is a stricter version of 3NF.' },
 ];
 
-async function callNvidia(prompt: string) {
-  const res = await axios.post(
-    NV_API,
-    {
-      model: 'meta/llama-3.1-8b-instruct',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 4096,
-      temperature: 0.85,
-      top_p: 0.95,
-      stream: false,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${NV_KEY}`,
-        Accept: 'application/json',
-      },
-      timeout: 30000,
-    }
-  );
-
-  const raw = res.data.choices?.[0]?.message?.content || '{}';
-  const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  return JSON.parse(cleaned);
-}
-
 export async function POST(req: NextRequest) {
   try {
     const { weakSubjects } = await req.json();
 
     try {
-      const [gaData, techData] = await Promise.all([
-        callNvidia(GA_PROMPT).catch(() => null),
-        callNvidia(TECH_PROMPT(weakSubjects || [])).catch(() => null),
+      const timeout = <T>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
+      const results = await Promise.allSettled([
+        timeout(generateWithFallback(GA_PROMPT, DAILY_MODELS), 60000),
+        timeout(generateWithFallback(TECH_PROMPT(weakSubjects || []), DAILY_MODELS), 60000),
       ]);
+
+      const gaData = results[0].status === 'fulfilled' ? results[0].value : null;
+      const techData = results[1].status === 'fulfilled' ? results[1].value : null;
 
       const gaQuestions = (gaData?.questions || []).slice(0, 5);
       const techQuestions = (techData?.questions || []).slice(0, 5);
@@ -98,7 +78,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ questions: [...gaQuestions, ...techQuestions] });
       }
     } catch {
-      // AI unavailable
+      // All models failed
     }
 
     return NextResponse.json({ questions: FALLBACK_QUESTIONS });
