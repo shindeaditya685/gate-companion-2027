@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Brain, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight,
   Send, BarChart3, BookOpen, ChevronLeft, HelpCircle,
-  History, RotateCcw,
+  History, RotateCcw, RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,6 +28,7 @@ interface MockQ {
 interface MockHistoryEntry {
   id: string;
   date: string;
+  completedAt?: string;
   name: string;
   score: number;
   type: 'subject' | 'full';
@@ -38,6 +39,7 @@ interface MockHistoryEntry {
     score: { correct: number; total: number; gaCorrect: number; gaTotal: number; techCorrect: number; techTotal: number };
     timeTaken: number;
     subject: string | null;
+    completedAt?: string;
   } | null;
 }
 
@@ -49,6 +51,9 @@ interface MockTabState {
 const API_BASE = '/api/mock-test/generate';
 const SUBMIT_API = '/api/mock-test/submit';
 const HISTORY_API = '/api/mock-test/history';
+const AUTH_TOKEN_KEY = 'auth-token';
+const LEGACY_AUTH_TOKEN_KEY = 'auth_token';
+const LOCAL_HISTORY_KEY = 'gate-mock-test-history-v1';
 
 const SUBJECTS = [
   { value: '', label: 'All Subjects (Full Mock)' },
@@ -70,6 +75,54 @@ const TYPE_BADGE: Record<string, { label: string; color: string }> = {
   nat: { label: 'NAT', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' },
   msq: { label: 'MSQ', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
 };
+
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem(LEGACY_AUTH_TOKEN_KEY);
+}
+
+function sortHistory(entries: MockHistoryEntry[]): MockHistoryEntry[] {
+  return [...entries].sort((a, b) => {
+    const aDate = a.fullRecord?.completedAt || a.completedAt || a.date;
+    const bDate = b.fullRecord?.completedAt || b.completedAt || b.date;
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
+  });
+}
+
+function mergeHistory(...groups: MockHistoryEntry[][]): MockHistoryEntry[] {
+  const merged = new Map<string, MockHistoryEntry>();
+
+  for (const group of groups) {
+    for (const entry of group) {
+      const existing = merged.get(entry.id);
+      if (!existing || (!existing.fullRecord && entry.fullRecord)) {
+        merged.set(entry.id, entry);
+      }
+    }
+  }
+
+  return sortHistory([...merged.values()]);
+}
+
+function loadLocalHistory(): MockHistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalHistory(entry: MockHistoryEntry) {
+  if (typeof window === 'undefined') return;
+  try {
+    const next = mergeHistory([entry], loadLocalHistory()).slice(0, 100);
+    localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(next));
+  } catch {}
+}
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -120,6 +173,7 @@ export function MockTest() {
   const [expandedQs, setExpandedQs] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [generationMeta, setGenerationMeta] = useState<{ source: 'ai' | 'fallback'; model?: string | null } | null>(null);
   const [mockHistory, setMockHistory] = useState<MockHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [expandedMocks, setExpandedMocks] = useState<Set<string>>(new Set());
@@ -149,6 +203,10 @@ export function MockTest() {
       const data = await res.json();
       if (!data.questions?.length) throw new Error('empty response');
       setQuestions(data.questions);
+      setGenerationMeta({
+        source: data.source === 'fallback' ? 'fallback' : 'ai',
+        model: data.model || null,
+      });
       setAnswers({});
       setCurrentIndex(0);
       setElapsed(0);
@@ -163,17 +221,22 @@ export function MockTest() {
 
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!token) { setLoadingHistory(false); return; }
+    const localHistory = loadLocalHistory();
+    const token = getAuthToken();
+    if (!token) {
+      setMockHistory(localHistory);
+      setLoadingHistory(false);
+      return;
+    }
     try {
       const res = await fetch(HISTORY_API + '?full=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
-      setMockHistory(data.mocks || []);
+      setMockHistory(mergeHistory(data.mocks || [], localHistory));
     } catch {
-      setMockHistory([]);
+      setMockHistory(localHistory);
     } finally {
       setLoadingHistory(false);
     }
@@ -203,6 +266,8 @@ export function MockTest() {
   };
 
   const handleSubmit = () => {
+    if (submitted || questions.length === 0) return;
+
     let gaCorrect = 0;
     let gaTotal = 0;
     let techCorrect = 0;
@@ -211,18 +276,45 @@ export function MockTest() {
       if (q.section === 'ga') { gaTotal++; if (isCorrect(q, answers[q.id])) gaCorrect++; }
       else { techTotal++; if (isCorrect(q, answers[q.id])) techCorrect++; }
     }
-    setScore({
+    const finalScore = {
       correct: gaCorrect + techCorrect,
       total: questions.length,
       gaCorrect, gaTotal, techCorrect, techTotal,
-    });
+    };
+    const completedAt = new Date().toISOString();
+    const testId = `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const historyEntry: MockHistoryEntry = {
+      id: testId,
+      date: completedAt.slice(0, 10),
+      completedAt,
+      name: subject ? `${subject} Mock` : 'Full-Length Mock',
+      score: finalScore.total ? Math.round((finalScore.correct / finalScore.total) * 100) : 0,
+      type: subject ? 'subject' : 'full',
+      mistakes: {
+        silly: 0,
+        conceptual: 0,
+        time: 0,
+      },
+      fullRecord: {
+        questions,
+        answers,
+        score: finalScore,
+        timeTaken: elapsed,
+        subject: subject || null,
+        completedAt,
+      },
+    };
+
+    setScore(finalScore);
     setSubmitted(true);
     setTab({ tab: 'new', phase: 'results' });
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    saveLocalHistory(historyEntry);
+    setMockHistory((prev) => mergeHistory([historyEntry], prev));
+
+    const token = getAuthToken();
     if (token) {
-      const testId = `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       fetch(SUBMIT_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -231,13 +323,9 @@ export function MockTest() {
           subject: subject || null,
           questions,
           answers,
-          score: {
-            correct: gaCorrect + techCorrect,
-            total: questions.length,
-            gaCorrect, gaTotal, techCorrect, techTotal,
-          },
+          score: finalScore,
           timeTaken: elapsed,
-          completedAt: new Date().toISOString(),
+          completedAt,
         }),
       }).catch(() => {});
     }
@@ -252,6 +340,21 @@ export function MockTest() {
   };
 
   const retake = (entry: MockHistoryEntry) => {
+    if (entry.fullRecord?.questions?.length) {
+      const subj = entry.fullRecord.subject || '';
+      setSubject(subj);
+      setQuestionCount(entry.fullRecord.questions.length);
+      setQuestions(entry.fullRecord.questions);
+      setAnswers({});
+      setCurrentIndex(0);
+      setElapsed(0);
+      setSubmitted(false);
+      setExpandedQs(new Set());
+      setGenerationMeta(null);
+      setTab({ tab: 'new', phase: 'test' });
+      return;
+    }
+
     const subj = entry.fullRecord?.subject || entry.name.replace(' Mock', '') || '';
     const found = SUBJECTS.find((s) => s.label.startsWith(subj) || s.value === subj);
     setSubject(found?.value || '');
@@ -289,25 +392,15 @@ export function MockTest() {
   if (tab.tab === 'history') {
     return (
       <div className="space-y-4">
+        {tabHeader}
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
             <History className="h-5 w-5 text-purple-500" />
             Mock Test History
           </h2>
-          <Button variant="ghost" size="sm" onClick={() => setTab({ tab: 'new', phase: 'config' })}>
-            <Brain className="h-4 w-4 mr-1" /> New Test
+          <Button variant="outline" size="sm" onClick={loadHistory} disabled={loadingHistory}>
+            <RefreshCw className={cn('h-4 w-4 mr-1', loadingHistory && 'animate-spin')} /> Refresh
           </Button>
-        </div>
-
-        <div className="flex gap-1 mb-2 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 w-fit">
-          <button onClick={() => setTab({ tab: 'new', phase: 'config' })}
-            className="px-3 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-            <Brain className="h-3.5 w-3.5 inline mr-1" /> New Test
-          </button>
-          <button onClick={() => setTab({ tab: 'history', phase: 'config' })}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-50 shadow-sm">
-            <History className="h-3.5 w-3.5 inline mr-1" /> History
-          </button>
         </div>
 
         {loadingHistory ? (
@@ -324,7 +417,7 @@ export function MockTest() {
           <div className="space-y-3">
             {/* Summary stats */}
             <Card>
-              <CardContent className="p-4 flex items-center justify-around text-center text-sm">
+              <CardContent className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-sm">
                 <div>
                   <p className="text-slate-400 text-xs">Tests</p>
                   <p className="text-lg font-bold text-slate-900 dark:text-slate-50">{mockHistory.length}</p>
@@ -341,6 +434,12 @@ export function MockTest() {
                     {Math.max(...mockHistory.map((m) => m.score))}%
                   </p>
                 </div>
+                <div>
+                  <p className="text-slate-400 text-xs">Retestable</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {mockHistory.filter((m) => !!m.fullRecord?.questions?.length).length}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -349,12 +448,12 @@ export function MockTest() {
               return (
                 <Card key={entry.id}>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
                       <div>
                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{entry.name}</p>
                         <p className="text-xs text-slate-400">{entry.date} · {timeAgo(entry.date)}</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge className={cn(
                           entry.score >= 60 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' :
                           entry.score >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' :
@@ -362,24 +461,24 @@ export function MockTest() {
                         )}>
                           {entry.score}%
                         </Badge>
-                        <Button variant="ghost" size="sm" onClick={() => retake(entry)}>
-                          <RotateCcw className="h-3.5 w-3.5" />
+                        <Button variant="outline" size="sm" onClick={() => retake(entry)}>
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" /> Retest
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => {
+                        <Button variant={expanded ? 'secondary' : 'ghost'} size="sm" disabled={!entry.fullRecord} onClick={() => {
                           setExpandedMocks((prev) => {
                             const next = new Set(prev);
                             next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id);
                             return next;
                           });
                         }}>
-                          <BookOpen className="h-3.5 w-3.5" />
+                          <BookOpen className="h-3.5 w-3.5 mr-1" /> {expanded ? 'Hide' : 'Review'}
                         </Button>
                       </div>
                     </div>
 
                     {entry.fullRecord && expanded && (
                       <div className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3 space-y-3">
-                        <div className="flex gap-4 text-xs text-slate-500">
+                        <div className="flex flex-wrap gap-3 text-xs text-slate-500">
                           <span>Score: <b>{entry.fullRecord.score.correct}/{entry.fullRecord.score.total}</b></span>
                           <span>GA: <b>{entry.fullRecord.score.gaCorrect}/{entry.fullRecord.score.gaTotal}</b></span>
                           <span>Tech: <b>{entry.fullRecord.score.techCorrect}/{entry.fullRecord.score.techTotal}</b></span>
@@ -419,7 +518,7 @@ export function MockTest() {
             AI Mock Test Generator
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Generates MCQ, NAT, and MSQ questions at GATE PYQ difficulty. Falls back across 4 AI models, then to static questions.
+            Generates MCQ, NAT, and MSQ questions at GATE PYQ difficulty. Falls back across multiple AI models, then to static questions.
           </p>
         </div>
 
@@ -555,9 +654,16 @@ export function MockTest() {
             {formatTime(elapsed)}
           </div>
         </div>
-        <Badge variant="outline" className="text-xs">
-          {answeredCount}/{questions.length} answered
-        </Badge>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {generationMeta && (
+            <Badge variant="secondary" className="text-xs">
+              {generationMeta.source === 'ai' ? (generationMeta.model || 'AI generated') : 'Local fallback'}
+            </Badge>
+          )}
+          <Badge variant="outline" className="text-xs">
+            {answeredCount}/{questions.length} answered
+          </Badge>
+        </div>
       </div>
 
       {/* Question palette */}

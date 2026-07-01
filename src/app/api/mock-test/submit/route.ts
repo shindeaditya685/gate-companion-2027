@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     const mockEntry = {
       id: testId,
       date: completedAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      completedAt: completedAt || new Date().toISOString(),
       name: subject ? `${subject} Mock` : 'Full-Length Mock',
       score: score?.total ? Math.round((score.correct / score.total) * 100) : 0,
       type: (subject ? 'subject' : 'full') as 'subject' | 'full',

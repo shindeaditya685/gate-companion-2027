@@ -1,5 +1,8 @@
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env
+✓ Ready in 1472ms
 
-> nextjs_tailwind_shadcn_ts@0.2.0 dev
-> next dev -p 3000
-
+ GET / 200 in 1845ms (next.js: 522ms, application-code: 1322ms)
 [?25h

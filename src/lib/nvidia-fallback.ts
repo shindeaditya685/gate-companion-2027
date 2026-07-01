@@ -2,7 +2,7 @@ import axios from 'axios';
 import OpenAI from 'openai';
 
 const NV_BASE = 'https://integrate.api.nvidia.com/v1';
-const MODEL_TIMEOUT = 30000;
+const MODEL_TIMEOUT = 22000;
 const MAX_RETRIES_PER_MODEL = 0;
 
 interface ModelConfig {
@@ -14,6 +14,25 @@ interface ModelConfig {
   topP: number;
   extra?: Record<string, any>;
 }
+
+type ModelAttempt = {
+  model: string;
+  keyEnv: string;
+  ok: boolean;
+  reason?: 'missing-key' | 'empty-response' | 'invalid-json' | 'invalid-data';
+  detail?: string;
+};
+
+type FallbackOptions<T> = {
+  parseAsJson?: boolean;
+  validate?: (data: T, cfg: ModelConfig) => true | string;
+};
+
+type FallbackResult<T = any> = {
+  data: T | null;
+  model: string | null;
+  attempts: ModelAttempt[];
+};
 
 const MODELS: ModelConfig[] = [
   { name: 'deepseek-ai/deepseek-v4-pro', keyEnv: 'NV_DEEPSEEK_KEY', method: 'openai', maxTokens: 16384, temperature: 0.7, topP: 0.9 },
@@ -84,7 +103,73 @@ async function callModel(prompt: string, cfg: ModelConfig): Promise<string | nul
 }
 
 function cleanJSON(raw: string): string {
-  return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return cleaned.slice(firstBrace, lastBrace + 1);
+  }
+
+  return cleaned;
+}
+
+export async function generateWithFallbackDetails<T = any>(
+  prompt: string,
+  models?: ModelConfig[],
+  options: FallbackOptions<T> = {},
+): Promise<FallbackResult<T>> {
+  const chain = models || MODELS;
+  const parseAsJson = options.parseAsJson ?? true;
+  const attempts: ModelAttempt[] = [];
+
+  for (const cfg of chain) {
+    if (!process.env[cfg.keyEnv]) {
+      attempts.push({ model: cfg.name, keyEnv: cfg.keyEnv, ok: false, reason: 'missing-key' });
+      continue;
+    }
+
+    const raw = await callModel(prompt, cfg);
+    if (!raw) {
+      attempts.push({ model: cfg.name, keyEnv: cfg.keyEnv, ok: false, reason: 'empty-response' });
+      continue;
+    }
+
+    let parsed: T;
+    if (parseAsJson) {
+      try {
+        parsed = JSON.parse(cleanJSON(raw)) as T;
+      } catch (err) {
+        attempts.push({
+          model: cfg.name,
+          keyEnv: cfg.keyEnv,
+          ok: false,
+          reason: 'invalid-json',
+          detail: err instanceof Error ? err.message : 'JSON parse failed',
+        });
+        continue;
+      }
+    } else {
+      parsed = raw as T;
+    }
+
+    const validation = options.validate?.(parsed, cfg) ?? true;
+    if (validation !== true) {
+      attempts.push({
+        model: cfg.name,
+        keyEnv: cfg.keyEnv,
+        ok: false,
+        reason: 'invalid-data',
+        detail: validation,
+      });
+      continue;
+    }
+
+    attempts.push({ model: cfg.name, keyEnv: cfg.keyEnv, ok: true });
+    return { data: parsed, model: cfg.name, attempts };
+  }
+
+  return { data: null, model: null, attempts };
 }
 
 export async function generateWithFallback(
@@ -92,18 +177,8 @@ export async function generateWithFallback(
   models?: ModelConfig[],
   parseAsJson: boolean = true,
 ): Promise<any> {
-  const chain = models || MODELS;
-  for (const cfg of chain) {
-    const raw = await callModel(prompt, cfg);
-    if (!raw) continue;
-    if (!parseAsJson) return raw;
-    try {
-      return JSON.parse(cleanJSON(raw));
-    } catch {
-      continue;
-    }
-  }
-  return null;
+  const result = await generateWithFallbackDetails(prompt, models, { parseAsJson });
+  return result.data;
 }
 
-export { MODELS, type ModelConfig };
+export { MODELS, type ModelConfig, type FallbackResult, type ModelAttempt };

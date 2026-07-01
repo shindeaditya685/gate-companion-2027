@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
     );
 
     const summaries = (prep?.mocks || []).sort(
-      (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a: any, b: any) =>
+        new Date(b.completedAt || b.date).getTime() - new Date(a.completedAt || a.date).getTime()
     ).slice(0, limit);
 
     if (!full) {
