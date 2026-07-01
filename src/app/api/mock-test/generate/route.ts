@@ -245,10 +245,22 @@ function pickFallbackQuestions(subject: string | null, count: number): MockQJson
   return picked;
 }
 
+const isServerless = !!process.env.NETLIFY || !!process.env.DEPLOY;
+
 export async function POST(req: NextRequest) {
   try {
     const { subject, count = 10 } = await req.json();
     const qCount = Math.min(Math.max(5, count), 65);
+
+    // Skip AI calls on serverless (Netlify 10s timeout). Use subject-filtered fallback.
+    if (isServerless) {
+      return NextResponse.json({
+        questions: pickFallbackQuestions(subject || null, qCount),
+        generatedAt: new Date().toISOString(),
+        source: 'fallback',
+        model: null,
+      });
+    }
 
     const subjectFilter = subject
       ? `Focus the technical questions on ${subject}. If generating for a specific subject, include a few GA questions too but make most technical questions about ${subject}. Generate exactly ${qCount} questions total.`

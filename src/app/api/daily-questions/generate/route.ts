@@ -57,9 +57,16 @@ const FALLBACK_QUESTIONS = [
   { id: 'tech-5', type: 'mcq', section: 'tech', subject: 'DBMS', question: 'In a relational database, which normal form requires that every non-prime attribute is fully functionally dependent on the primary key?', options: ['1NF', '2NF', '3NF', 'BCNF'], correct: 1, explanation: '2NF requires 1NF plus every non-prime attribute must be fully functionally dependent on the primary key (no partial dependencies). 3NF requires 2NF plus no transitive dependencies. BCNF is a stricter version of 3NF.' },
 ];
 
+const isServerless = !!process.env.NETLIFY || !!process.env.DEPLOY;
+
 export async function POST(req: NextRequest) {
   try {
     const { weakSubjects } = await req.json();
+
+    // Skip AI on serverless (Netlify 10s timeout). Use static fallback.
+    if (isServerless) {
+      return NextResponse.json({ questions: FALLBACK_QUESTIONS });
+    }
 
     try {
       const timeout = <T>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
