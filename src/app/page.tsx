@@ -16,6 +16,7 @@ import { TodoPanel } from '@/components/sections/todo-panel';
 import { DSATables } from '@/components/sections/dsa-tables';
 import { DailyQuestions } from '@/components/sections/daily-questions';
 import { NotificationSettings } from '@/components/sections/notification-settings';
+import { MockTest } from '@/components/sections/mock-test';
 import { GateCalculator } from '@/components/calculator/gate-calculator';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
@@ -53,6 +54,7 @@ export default function Home() {
         {activeTab === 'dsa' && <DSATables />}
         {activeTab === 'psu' && <PSUTrackerView />}
         {activeTab === 'selfcare' && <SelfCareView />}
+        {activeTab === 'mocktest' && <MockTest />}
         {activeTab === 'timer' && <StudyTimer />}
         {activeTab === 'todos' && <TodoPanel />}
         {activeTab === 'calculator' && <GateCalculator inline />}

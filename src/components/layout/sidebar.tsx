@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, CalendarDays, Repeat,
   FileBarChart, ScrollText, FileText, Binary,
   Building2, HeartPulse, Timer, CheckSquare, Calculator, Sun,
-  X, Menu, GraduationCap, PanelLeftClose, PanelLeft, Bell,
+  X, Menu, GraduationCap, PanelLeftClose, PanelLeft, Bell, Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Practice',
     items: [
       { id: 'daily', label: 'Daily Challenge', Icon: Sun },
+      { id: 'mocktest', label: 'Mock Test', Icon: Brain },
       { id: 'mocks', label: 'Mocks', Icon: FileBarChart },
       { id: 'pyq', label: 'PYQs', Icon: ScrollText },
       { id: 'cheatsheet', label: 'Cheat Sheet', Icon: FileText },
