@@ -36,7 +36,7 @@ export default function Home() {
 
       <main className={cn(
         'flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 transition-all duration-300',
-        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-68',
+        sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64',
         'lg:pr-8',
       )}>
         {activeTab === 'dashboard' && <Dashboard onNavigate={setActiveTab} />}

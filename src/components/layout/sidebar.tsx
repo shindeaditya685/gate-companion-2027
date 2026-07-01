@@ -131,10 +131,7 @@ export function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className={cn(
-          'flex-1 overflow-y-auto space-y-1 scrollbar-thin',
-          collapsed ? 'px-2 py-3' : 'px-2 py-3',
-        )}>
+        <nav className="flex-1 overflow-y-auto space-y-1 px-2 py-3">
           {NAV_GROUPS.map((group) => (
             <div key={group.label ?? 'main'}>
               {group.label && (

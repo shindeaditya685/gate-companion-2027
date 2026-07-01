@@ -5,7 +5,7 @@ export function AppFooter({ sidebarCollapsed = false }: { sidebarCollapsed?: boo
     <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/60">
       <div className={cn(
         'max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 transition-all duration-300',
-        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-68',
+        sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64',
         'lg:pr-8',
       )}>
         <p>

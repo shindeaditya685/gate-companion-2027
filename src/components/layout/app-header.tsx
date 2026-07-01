@@ -29,7 +29,7 @@ export function AppHeader({ sidebarCollapsed = false }: { sidebarCollapsed?: boo
     <header className="sticky top-0 z-30 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className={cn(
         'max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between transition-all duration-300',
-        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-68',
+        sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64',
         'lg:pr-8',
       )}>
         <div className="flex items-center gap-2.5">
