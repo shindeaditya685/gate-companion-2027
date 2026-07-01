@@ -186,7 +186,7 @@ const PENDING_LABEL: Record<string, string> = {
   yroot: "y√x",
 };
 
-export function GateCalculator({ onClose }: { onClose: () => void }) {
+export function GateCalculator({ onClose, inline }: { onClose?: () => void; inline?: boolean }) {
   const [expr, setExpr] = useState("0");
   const [result, setResult] = useState<string | null>(null);
   const [memory, setMemory] = useState(0);
@@ -593,8 +593,8 @@ export function GateCalculator({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4">
-      <div className="w-full max-w-[460px] rounded-sm border border-[#7a7a7a] bg-[#d9d9d9] shadow-2xl shadow-slate-900/30 overflow-hidden">
+    <div className={inline ? '' : 'fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4'}>
+      <div className={'w-full max-w-[460px] rounded-sm border border-[#7a7a7a] bg-[#d9d9d9]' + (inline ? '' : ' shadow-2xl shadow-slate-900/30 overflow-hidden')}>
         {/* Title bar */}
         <div className="flex items-center justify-between bg-gradient-to-b from-[#5b9bf5] to-[#2f6fe0] px-2.5 py-1.5">
           <span className="text-[13px] font-bold text-white">
@@ -607,20 +607,24 @@ export function GateCalculator({ onClose }: { onClose: () => void }) {
             >
               Help
             </button>
-            <button
-              type="button"
-              aria-label="Minimize"
-              className="px-1 text-[14px] leading-none text-white/90 hover:text-white"
-            >
-              &#8211;
-            </button>
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="px-1 text-[14px] leading-none text-white/90 hover:text-white"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            {inline ? null : (
+              <>
+                <button
+                  type="button"
+                  aria-label="Minimize"
+                  className="px-1 text-[14px] leading-none text-white/90 hover:text-white"
+                >
+                  &#8211;
+                </button>
+                <button
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="px-1 text-[14px] leading-none text-white/90 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
           </div>
         </div>
 

@@ -14,7 +14,7 @@ import { SelfCareView } from '@/components/sections/self-care';
 import { StudyTimer } from '@/components/sections/study-timer';
 import { TodoPanel } from '@/components/sections/todo-panel';
 import { DSATables } from '@/components/sections/dsa-tables';
-import { CalculatorToggle } from '@/components/calculator/calculator-toggle';
+import { GateCalculator } from '@/components/calculator/gate-calculator';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -51,8 +51,7 @@ export default function Home() {
         {activeTab === 'selfcare' && <SelfCareView />}
         {activeTab === 'timer' && <StudyTimer />}
         {activeTab === 'todos' && <TodoPanel />}
-
-        <CalculatorToggle />
+        {activeTab === 'calculator' && <GateCalculator inline />}
       </main>
 
       <AppFooter sidebarCollapsed={sidebarCollapsed} />
