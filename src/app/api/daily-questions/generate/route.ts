@@ -1,9 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateWithFallback, MODELS } from '@/lib/nvidia-fallback';
-
-const DAILY_MODELS = MODELS.filter((m) =>
-  ['meta/llama-3.1-8b-instruct', 'mistralai/mistral-medium-3.5-128b', 'minimaxai/minimax-m2.7', 'google/diffusiongemma-26b-a4b-it'].includes(m.name)
-);
 
 const GA_PROMPT = `You are a GATE exam expert. Generate exactly 5 General Aptitude questions at GATE difficulty level.
 
@@ -14,8 +9,7 @@ Cover each sub-type exactly once:
 4. Data Interpretation: table, bar graph, pie chart, or line graph based
 5. Mixed: probability, permutations-combinations, mixtures, or number system
 
-Each question must be exam-hard level — not trivial. Include a numeric answer option where relevant.
-Each must have exactly 4 options (A/B/C/D), exactly one correct answer (0-indexed), and a clear step-by-step explanation.
+Each question must be exam-hard level. Each must have exactly 4 options (A/B/C/D), exactly one correct answer (0-indexed), and a clear step-by-step explanation.
 
 Return ONLY valid JSON — no markdown, no code fences:
 {"questions":[
@@ -63,29 +57,31 @@ export async function POST(req: NextRequest) {
   try {
     const { weakSubjects } = await req.json();
 
-    // Skip AI on serverless (Netlify 10s timeout). Use static fallback.
-    if (isServerless) {
-      return NextResponse.json({ questions: FALLBACK_QUESTIONS });
-    }
+    if (!isServerless) {
+      try {
+        const models = ['meta/llama-3.1-8b-instruct', 'mistralai/mistral-medium-3.5-128b', 'minimaxai/minimax-m2.7', 'google/diffusiongemma-26b-a4b-it'];
+        const fb = await import('@/lib/nvidia-fallback');
+        const dailyModels = fb.MODELS.filter((m) => models.includes(m.name));
+        const timeout = <T>(p: Promise<T>, ms: number) =>
+          Promise.race([p, new Promise<null>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
-    try {
-      const timeout = <T>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
-      const results = await Promise.allSettled([
-        timeout(generateWithFallback(GA_PROMPT, DAILY_MODELS), 60000),
-        timeout(generateWithFallback(TECH_PROMPT(weakSubjects || []), DAILY_MODELS), 60000),
-      ]);
+        const results = await Promise.allSettled([
+          timeout(fb.generateWithFallback(GA_PROMPT, dailyModels), 60000),
+          timeout(fb.generateWithFallback(TECH_PROMPT(weakSubjects || []), dailyModels), 60000),
+        ]);
 
-      const gaData = results[0].status === 'fulfilled' ? results[0].value : null;
-      const techData = results[1].status === 'fulfilled' ? results[1].value : null;
+        const gaData = results[0].status === 'fulfilled' ? results[0].value : null;
+        const techData = results[1].status === 'fulfilled' ? results[1].value : null;
 
-      const gaQuestions = (gaData?.questions || []).slice(0, 5);
-      const techQuestions = (techData?.questions || []).slice(0, 5);
+        const gaQuestions = (gaData?.questions || []).slice(0, 5);
+        const techQuestions = (techData?.questions || []).slice(0, 5);
 
-      if (gaQuestions.length === 5 && techQuestions.length === 5) {
-        return NextResponse.json({ questions: [...gaQuestions, ...techQuestions] });
+        if (gaQuestions.length === 5 && techQuestions.length === 5) {
+          return NextResponse.json({ questions: [...gaQuestions, ...techQuestions] });
+        }
+      } catch {
+        // AI failed, fall through to static
       }
-    } catch {
-      // All models failed
     }
 
     return NextResponse.json({ questions: FALLBACK_QUESTIONS });

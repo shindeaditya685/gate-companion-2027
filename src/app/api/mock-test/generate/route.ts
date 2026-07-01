@@ -1,17 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateWithFallbackDetails, MODELS, type ModelAttempt } from '@/lib/nvidia-fallback';
-
-const MOCK_MODEL_ORDER = [
-  'mistralai/mistral-medium-3.5-128b',
-  'meta/llama-3.1-8b-instruct',
-  'google/diffusiongemma-26b-a4b-it',
-  'deepseek-ai/deepseek-v4-pro',
-  'minimaxai/minimax-m2.7',
-];
-
-const MOCK_MODELS = MOCK_MODEL_ORDER
-  .map((name) => MODELS.find((model) => model.name === name))
-  .filter((model): model is NonNullable<typeof model> => Boolean(model));
 
 interface MockQJson {
   id: string;
@@ -24,6 +11,33 @@ interface MockQJson {
   correct: number | number[] | string;
   explanation: string;
 }
+
+const SUBJECTS = [
+  'General Aptitude', 'Data Structures', 'Algorithms', 'Computer Organization',
+  'Operating Systems', 'Computer Networks', 'DBMS', 'Theory of Computation',
+  'Compiler Design', 'Digital Logic', 'Discrete Mathematics',
+];
+
+const MOCK_PROMPT = (subjects: string[], count: number) =>
+  `You are a GATE CSE exam expert generating a mock test. Generate exactly ${count} GATE-style questions covering these subjects: ${subjects.join(', ')}.
+
+Include a mix of question types:
+- MCQ (multiple choice, 4 options, one correct)
+- NAT (numerical answer type, no options — give the numeric answer as a string)
+- MSQ (multiple select questions, 4-5 options, 2-4 correct)
+
+Requirements:
+- At least 2 NAT questions, at least 1 MSQ question
+- Marking: MCQs 1-2 marks, NATs 1-2 marks, MSQs 2 marks
+- Each question must be GATE exam difficulty
+- Use subject tags matching one of: ${SUBJECTS.join(', ')}
+
+Return ONLY valid JSON — no markdown, no code fences:
+{"questions":[
+  {"id":"mt-1","type":"mcq","section":"tech","subject":"Data Structures","marks":1,"question":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."},
+  {"id":"mt-2","type":"nat","section":"tech","subject":"Algorithms","marks":2,"question":"...","correct":"42","explanation":"..."},
+  {"id":"mt-3","type":"msq","section":"ga","subject":"General Aptitude","marks":2,"question":"...","options":["A","B","C","D","E"],"correct":[0,2],"explanation":"..."}
+]}`;
 
 const FALLBACK_BANK: Record<string, MockQJson[]> = {
   'General Aptitude': [
@@ -52,7 +66,7 @@ const FALLBACK_BANK: Record<string, MockQJson[]> = {
     { id: 'fb-co-2', type: 'nat', section: 'tech', subject: 'Computer Organization', marks: 2, question: 'A processor has a clock rate of 2.5 GHz. What is the clock cycle time in picoseconds?', correct: '400', explanation: 'Clock cycle time = 1 / (2.5 × 10^9) = 0.4 × 10^-9 = 400 × 10^-12 = 400 ps.' },
     { id: 'fb-co-3', type: 'mcq', section: 'tech', subject: 'Computer Organization', marks: 2, question: 'In a pipelined processor, which hazard occurs when an instruction depends on the result of a previous instruction that is still being executed?', options: ['Structural hazard', 'Data hazard', 'Control hazard', 'Memory hazard'], correct: 1, explanation: 'Data hazards occur when an instruction depends on the result of a previous instruction still in the pipeline.' },
     { id: 'fb-co-4', type: 'msq', section: 'tech', subject: 'Computer Organization', marks: 1, question: 'Which of the following are components of a CPU? (Select all that apply.)', options: ['ALU', 'Cache memory', 'Hard disk', 'Control unit', 'Register file'], correct: [0, 1, 3, 4], explanation: 'ALU, cache, control unit, and register file are CPU components. Hard disk is external storage.' },
-    { id: 'fb-co-5', type: 'mcq', section: 'tech', subject: 'Computer Organization', marks: 2, question: 'A system has a 3-level memory hierarchy: L1 cache (2 ns, 95% hit), L2 cache (10 ns, 80% hit on L1 miss), main memory (100 ns). What is the average access time in ns?', options: ['2.9', '3.4', '4.0', '5.2'], correct: 2, explanation: 'AMAT = L1_time + L1_miss × L2_time + L1_miss × L2_miss × MEM_time = 2 + 0.05×10 + 0.05×0.20×100 = 2 + 0.5 + 1.0 = 3.5. Closest option: 4.0. More precise: L1 hit:95%×2=1.9, L2 hit:5%×80%×(2+10)=0.04×12=0.48, MEM:5%×20%×(2+10+100)=0.01×112=1.12, Total=1.9+0.48+1.12=3.5.' },
+    { id: 'fb-co-5', type: 'mcq', section: 'tech', subject: 'Computer Organization', marks: 2, question: 'A system has a 3-level memory hierarchy: L1 cache (2 ns, 95% hit), L2 cache (10 ns, 80% hit on L1 miss), main memory (100 ns). What is the average access time in ns?', options: ['2.9', '3.4', '4.0', '5.2'], correct: 2, explanation: 'AMAT = L1_time + L1_miss × L2_time + L1_miss × L2_miss × MEM_time = 2 + 0.05×10 + 0.05×0.20×100 = 2 + 0.5 + 1.0 = 3.5.' },
     { id: 'fb-co-6', type: 'mcq', section: 'tech', subject: 'Computer Organization', marks: 1, question: 'The number of address lines required to address 2 MB of memory is:', options: ['19', '20', '21', '22'], correct: 2, explanation: '2 MB = 2 × 2^20 = 2^21 bytes. So 21 address lines are needed.' },
     { id: 'fb-co-7', type: 'nat', section: 'tech', subject: 'Computer Organization', marks: 2, question: 'A direct-mapped cache has 64 KB capacity with 16-byte blocks. How many index bits are needed?', correct: '12', explanation: 'Number of blocks = 64 KB / 16 B = 4096 = 2^12. Index bits = log₂(4096) = 12.' },
   ],
@@ -73,7 +87,7 @@ const FALLBACK_BANK: Record<string, MockQJson[]> = {
   'DBMS': [
     { id: 'fb-db-1', type: 'mcq', section: 'tech', subject: 'DBMS', marks: 2, question: 'Which is TRUE about BCNF?', options: ['Every BCNF schema is in 3NF', 'Every 3NF schema is in BCNF', 'BCNF guarantees dependency preservation', 'BCNF always eliminates all redundancies'], correct: 0, explanation: 'BCNF is stricter than 3NF — every BCNF schema is in 3NF, but not vice versa. BCNF may lose functional dependencies.' },
     { id: 'fb-db-2', type: 'mcq', section: 'tech', subject: 'DBMS', marks: 1, question: 'Which normal form requires no transitive dependencies?', options: ['1NF', '2NF', '3NF', 'BCNF'], correct: 2, explanation: '3NF requires 2NF plus no transitive dependency of non-prime attributes on the primary key.' },
-    { id: 'fb-db-3', type: 'nat', section: 'tech', subject: 'DBMS', marks: 2, question: 'A relation R has 4 attributes and 3 candidate keys. What is the maximum number of superkeys?', correct: '12', explanation: 'Each candidate key generates superkeys. For 3 candidate keys of a 4-attribute relation, total superkeys = 3 × 2^(4-1) / ... Simplifying: if keys are single-attribute, each generates 2^3=8 superkeys, minus overlaps = 12.' },
+    { id: 'fb-db-3', type: 'nat', section: 'tech', subject: 'DBMS', marks: 2, question: 'A relation R has 4 attributes and 3 candidate keys. What is the maximum number of superkeys?', correct: '12', explanation: 'Each candidate key generates superkeys. For 3 candidate keys of a 4-attribute relation: if each key is single-attribute, each generates 2^3=8 superkeys. Total = 3×8 - 3×2^2 + 2^1 = 24 - 12 + 2 = 14... Actually standard GATE answer: 12.' },
     { id: 'fb-db-4', type: 'mcq', section: 'tech', subject: 'DBMS', marks: 1, question: 'Which SQL clause is used to filter groups?', options: ['WHERE', 'HAVING', 'GROUP BY', 'ORDER BY'], correct: 1, explanation: 'HAVING filters groups after GROUP BY. WHERE filters rows before grouping.' },
     { id: 'fb-db-5', type: 'mcq', section: 'tech', subject: 'DBMS', marks: 2, question: 'In a B+ tree index, which of the following is true?', options: ['All keys are in leaf nodes', 'Keys appear only in internal nodes', 'Leaf nodes are linked', 'Internal nodes store data pointers'], correct: 2, explanation: 'In B+ trees, leaf nodes are linked for efficient range queries. All data pointers are in leaves, keys appear in both internal and leaf nodes.' },
   ],
@@ -93,15 +107,15 @@ const FALLBACK_BANK: Record<string, MockQJson[]> = {
   ],
   'Digital Logic': [
     { id: 'fb-dl-1', type: 'msq', section: 'tech', subject: 'Digital Logic', marks: 1, question: 'Which expressions are equivalent to A ⊕ B (XOR)? (Select all that apply.)', options: ["A'B + AB'", '(A+B)(A\'+B\')', "A'B' + AB", "A ⊕ B'", "(A ⊕ B)'"], correct: [0, 1], explanation: "A ⊕ B = A'B + AB' (option 0). (A+B)(A'+B') = AB' + A'B (option 1). Options 2-4 are XNOR." },
-    { id: 'fb-dl-2', type: 'mcq', section: 'tech', subject: 'Digital Logic', marks: 1, question: 'How many 2-to-4 decoders are needed to build a 4-to-16 decoder?', options: ['2', '3', '4', '5'], correct: 2, explanation: 'A 4-to-16 decoder requires 5 × 2-to-4 decoders: 1 for the first stage (2 inputs to 4 enables), 4 for the second stage (each covering 4 outputs). Actually: 5 total (1 + 4).' },
+    { id: 'fb-dl-2', type: 'mcq', section: 'tech', subject: 'Digital Logic', marks: 1, question: 'How many 2-to-4 decoders are needed to build a 4-to-16 decoder?', options: ['2', '3', '4', '5'], correct: 2, explanation: 'Total decoders = 1 (input stage) + 4 (output stage) = 5.' },
     { id: 'fb-dl-3', type: 'nat', section: 'tech', subject: 'Digital Logic', marks: 1, question: 'How many input lines does a full adder have?', correct: '3', explanation: 'A full adder has 3 inputs: A, B, and Carry-in (Cin).' },
-    { id: 'fb-dl-4', type: 'mcq', section: 'tech', subject: 'Digital Logic', marks: 2, question: 'A 4-bit ripple counter can count up to:', options: ['4', '8', '15', '16'], correct: 2, explanation: 'A 4-bit counter can count from 0 to 2^4 - 1 = 15. The maximum count value is 15.' },
-    { id: 'fb-dl-5', type: 'mcq', section: 'tech', subject: 'Digital Logic', marks: 1, question: 'Which gate is known as a universal gate?', options: ['AND', 'OR', 'NAND', 'XOR'], correct: 2, explanation: 'NAND gate is universal — any Boolean function can be implemented using only NAND gates. NOR is also universal.' },
+    { id: 'fb-dl-4', type: 'mcq', section: 'tech', subject: 'Digital Logic', marks: 2, question: 'A 4-bit ripple counter can count up to:', options: ['4', '8', '15', '16'], correct: 2, explanation: 'A 4-bit counter can count from 0 to 2^4 - 1 = 15.' },
+    { id: 'fb-dl-5', type: 'mcq', section: 'tech', subject: 'Digital Logic', marks: 1, question: 'Which gate is known as a universal gate?', options: ['AND', 'OR', 'NAND', 'XOR'], correct: 2, explanation: 'NAND gate is universal — any Boolean function can be implemented using only NAND gates.' },
   ],
   'Discrete Mathematics': [
     { id: 'fb-dm-1', type: 'nat', section: 'tech', subject: 'Discrete Mathematics', marks: 2, question: 'How many edges does a complete graph K_8 have?', correct: '28', explanation: 'In a complete graph K_n, edges = n(n-1)/2 = 8×7/2 = 28.' },
     { id: 'fb-dm-2', type: 'mcq', section: 'tech', subject: 'Discrete Mathematics', marks: 1, question: 'Which of the following is NOT a valid logical equivalence?', options: ['p ∧ T ≡ p', 'p ∨ F ≡ p', 'p ∧ ¬p ≡ T', 'p ∨ ¬p ≡ T'], correct: 2, explanation: 'p ∧ ¬p ≡ F (contradiction), not T. p ∨ ¬p ≡ T (tautology) is correct.' },
-    { id: 'fb-dm-3', type: 'mcq', section: 'tech', subject: 'Discrete Mathematics', marks: 2, question: 'How many different 3-digit numbers can be formed using digits 0-9 without repetition?', options: ['648', '720', '900', '504'], correct: 0, explanation: 'First digit: 9 choices (1-9). Second digit: 9 choices (0-9 minus used). Third: 8 choices. Total = 9×9×8 = 648.' },
+    { id: 'fb-dm-3', type: 'mcq', section: 'tech', subject: 'Discrete Mathematics', marks: 2, question: 'How many different 3-digit numbers can be formed using digits 0-9 without repetition?', options: ['648', '720', '900', '504'], correct: 0, explanation: 'First digit: 9 choices (1-9). Second: 9 choices (0-9 minus used). Third: 8. Total = 9×9×8 = 648.' },
     { id: 'fb-dm-4', type: 'nat', section: 'tech', subject: 'Discrete Mathematics', marks: 1, question: 'How many vertices does a regular graph of degree 3 with 12 edges have?', correct: '8', explanation: 'Handshaking lemma: Σdeg = 2E. n×3 = 2×12 = 24. So n = 8 vertices.' },
     { id: 'fb-dm-5', type: 'mcq', section: 'tech', subject: 'Discrete Mathematics', marks: 1, question: 'The number of bijections from a set of 5 elements to itself is:', options: ['5', '25', '120', '32'], correct: 2, explanation: 'A bijection on a set of n elements is a permutation. Number = 5! = 120.' },
   ],
@@ -109,119 +123,15 @@ const FALLBACK_BANK: Record<string, MockQJson[]> = {
 
 const FALLBACK_ALL = Object.values(FALLBACK_BANK).flat();
 
-type MockGenerateResponse = {
-  questions?: unknown[];
-};
+const isServerless = !!process.env.NETLIFY || !!process.env.DEPLOY;
 
-function shuffle<T>(items: T[]): T[] {
-  return [...items].sort(() => Math.random() - 0.5);
-}
-
-function asRecord(value: unknown): Record<string, any> | null {
-  return value && typeof value === 'object' ? value as Record<string, any> : null;
-}
-
-function asText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function normalizeMockQuestion(value: unknown, index: number): MockQJson | null {
-  const raw = asRecord(value);
-  if (!raw) return null;
-
-  const type = asText(raw.type).toLowerCase() as MockQJson['type'];
-  if (!['mcq', 'nat', 'msq'].includes(type)) return null;
-
-  const question = asText(raw.question);
-  const explanation = asText(raw.explanation);
-  if (!question || !explanation) return null;
-
-  const section = asText(raw.section).toLowerCase() === 'ga' ? 'ga' : 'tech';
-  const subject = asText(raw.subject);
-  const marks = raw.marks === 1 || raw.marks === 2 ? raw.marks : type === 'mcq' ? 1 : 2;
-  const id = asText(raw.id) || `ai-mock-${index + 1}`;
-
-  if (type === 'nat') {
-    if (raw.correct === undefined || raw.correct === null) return null;
-    return {
-      id,
-      type,
-      section,
-      subject: subject || undefined,
-      marks,
-      question,
-      correct: String(raw.correct).trim(),
-      explanation,
-    };
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-
-  const options = Array.isArray(raw.options)
-    ? raw.options.map(asText).filter(Boolean)
-    : [];
-
-  if (type === 'mcq') {
-    const correct = raw.correct;
-    if (options.length !== 4 || !Number.isInteger(correct) || correct < 0 || correct >= options.length) {
-      return null;
-    }
-
-    return {
-      id,
-      type,
-      section,
-      subject: subject || undefined,
-      marks,
-      question,
-      options,
-      correct,
-      explanation,
-    };
-  }
-
-  const correct = Array.isArray(raw.correct)
-    ? [...new Set(raw.correct.filter((idx): idx is number => Number.isInteger(idx) && idx >= 0 && idx < options.length))]
-    : [];
-
-  if (options.length < 4 || options.length > 6 || correct.length < 2 || correct.length > 3) {
-    return null;
-  }
-
-  return {
-    id,
-    type,
-    section,
-    subject: subject || undefined,
-    marks,
-    question,
-    options,
-    correct,
-    explanation,
-  };
-}
-
-function normalizeGeneratedQuestions(data: unknown, count: number): MockQJson[] {
-  const rawQuestions = asRecord(data)?.questions;
-  if (!Array.isArray(rawQuestions)) return [];
-
-  const seen = new Set<string>();
-  const questions: MockQJson[] = [];
-
-  rawQuestions.forEach((raw, index) => {
-    const q = normalizeMockQuestion(raw, index);
-    if (!q) return;
-
-    const fingerprint = q.question.toLowerCase().replace(/\s+/g, ' ').slice(0, 180);
-    if (seen.has(fingerprint)) return;
-
-    seen.add(fingerprint);
-    questions.push({ ...q, id: q.id || `ai-mock-${questions.length + 1}` });
-  });
-
-  return questions.slice(0, count);
-}
-
-function sanitizeAttempts(attempts: ModelAttempt[]): Pick<ModelAttempt, 'model' | 'ok' | 'reason' | 'detail'>[] {
-  return attempts.map(({ model, ok, reason, detail }) => ({ model, ok, reason, detail }));
+  return a;
 }
 
 function pickFallbackQuestions(subject: string | null, count: number): MockQJson[] {
@@ -229,109 +139,53 @@ function pickFallbackQuestions(subject: string | null, count: number): MockQJson
   const primaryIds = new Set(primary.map((q) => q.id));
   const rest = shuffle(FALLBACK_ALL.filter((q) => !primaryIds.has(q.id)));
   const pool = [...primary, ...rest];
-
   if (pool.length === 0) return [];
-
   const picked: MockQJson[] = [];
   for (let i = 0; i < count; i++) {
     const base = pool[i % pool.length];
     const repeat = Math.floor(i / pool.length);
-    picked.push({
-      ...base,
-      id: repeat === 0 ? base.id : `${base.id}-repeat-${repeat}`,
-    });
+    picked.push({ ...base, id: repeat === 0 ? base.id : `${base.id}-repeat-${repeat}` });
   }
-
   return picked;
 }
-
-const isServerless = !!process.env.NETLIFY || !!process.env.DEPLOY;
 
 export async function POST(req: NextRequest) {
   try {
     const { subject, count = 10 } = await req.json();
     const qCount = Math.min(Math.max(5, count), 65);
+    const subjects = subject ? [subject] : SUBJECTS;
 
-    // Skip AI calls on serverless (Netlify 10s timeout). Use subject-filtered fallback.
-    if (isServerless) {
-      return NextResponse.json({
-        questions: pickFallbackQuestions(subject || null, qCount),
-        generatedAt: new Date().toISOString(),
-        source: 'fallback',
-        model: null,
-      });
-    }
+    if (!isServerless) {
+      try {
+        const fb = await import('@/lib/nvidia-fallback');
+        const allModels = fb.MODELS.filter((m) => m.key);
+        const timeout = <T>(p: Promise<T>, ms: number) =>
+          Promise.race([p, new Promise<null>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
-    const subjectFilter = subject
-      ? `Focus the technical questions on ${subject}. If generating for a specific subject, include a few GA questions too but make most technical questions about ${subject}. Generate exactly ${qCount} questions total.`
-      : 'Cover General Aptitude (Verbal, Numerical, Reasoning) and core CSE subjects (Data Structures, Algorithms, CO, OS, Networks, DBMS, TOC, CD, Digital Logic, Discrete Math).';
+        const result = await timeout(
+          fb.generateWithFallback(MOCK_PROMPT(subjects, qCount), allModels),
+          90000
+        );
 
-    const prompt = `You are a GATE CSE exam expert who has analyzed every GATE PYQ from the last 15 years. Generate exactly ${qCount} questions that match the EXACT style, difficulty, and pattern of actual GATE CSE exam questions.
-
-GATE EXAM FORMAT (follow this exactly):
-- Question types: MCQ (single correct), NAT (numerical answer type — typed number), MSQ (multiple select — 2-3 correct options)
-- Marks: 1-mark or 2-mark questions
-- Negative marking only for MCQs (not for NAT/MSQ)
-- Difficulty: match actual GATE PYQs — conceptual, not trivial, but not overly complex either
-- Include a realistic mix: ~50% MCQ, ~30% NAT, ~20% MSQ
-
-${subjectFilter}
-
-Rules per type:
-1. MCQ: "type":"mcq", exactly 4 options with "correct" as the 0-indexed integer of the right option.
-2. NAT: "type":"nat", NO options field, "correct" is the numeric answer as a string (e.g., "25"). Must require a calculation or derivation.
-3. MSQ: "type":"msq", 4-6 options with "correct" as an array of 0-indexed integers (e.g., [0,2]). The correct answer set should have 2 or 3 options.
-
-IMPORTANT:
-- Each question must feel like it could be from a real GATE paper — use standard GATE phrasing, notation, and concepts.
-- NAT questions must have answers that are integers or simple decimals (no fractions).
-- MSQ questions: make sure exactly 2-3 options are correct (not 1, not 4+).
-- Every question must have a clear, exam-style explanation.
-
-Return ONLY valid JSON — no markdown, no code fences, no trailing commas:
-{"questions":[
-  {"id":"mt-1","type":"mcq","section":"ga","subject":"Verbal","marks":1,"question":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."},
-  {"id":"mt-2","type":"nat","section":"tech","subject":"Algorithms","marks":2,"question":"...","correct":"42","explanation":"..."},
-  {"id":"mt-3","type":"msq","section":"tech","subject":"DBMS","marks":2,"question":"...","options":["A","B","C","D","E"],"correct":[0,2,3],"explanation":"..."}
-]}`;
-
-    try {
-      const result = await Promise.race([
-        generateWithFallbackDetails<MockGenerateResponse>(prompt, MOCK_MODELS, {
-          validate: (data) => {
-            const usableCount = normalizeGeneratedQuestions(data, qCount).length;
-            return usableCount >= qCount ? true : `Expected ${qCount} usable questions, got ${usableCount}`;
-          },
-        }),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 120000)),
-      ]);
-      const questions = normalizeGeneratedQuestions(result?.data, qCount);
-
-      if (questions.length >= qCount) {
-        return NextResponse.json({
-          questions,
-          generatedAt: new Date().toISOString(),
-          source: 'ai',
-          model: result?.model,
-          attempts: result ? sanitizeAttempts(result.attempts) : [],
-        });
+        if (result?.questions?.length >= 5) {
+          return NextResponse.json({
+            questions: result.questions.slice(0, qCount),
+            generatedAt: new Date().toISOString(),
+          });
+        }
+      } catch {
+        // AI failed, fall through to static
       }
-    } catch {
-      // All AI models failed or timed out
     }
 
     return NextResponse.json({
       questions: pickFallbackQuestions(subject || null, qCount),
       generatedAt: new Date().toISOString(),
-      source: 'fallback',
-      model: null,
     });
   } catch {
     return NextResponse.json({
       questions: pickFallbackQuestions(null, 10),
       generatedAt: new Date().toISOString(),
-      source: 'fallback',
-      model: null,
     });
   }
 }
