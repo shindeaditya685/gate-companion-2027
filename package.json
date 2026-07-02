@@ -9,7 +9,7 @@
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "dev:webpack": "next dev -H 127.0.0.1 -p 3000 --webpack",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "next start -p ${PORT:-3000}",
     "lint": "eslint ."
   },
   "dependencies": {
