@@ -8,10 +8,8 @@
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "dev:webpack": "next dev -H 127.0.0.1 -p 3000 --webpack",
-    "build:local": "next build",
-    "start:local": "node .next-local/standalone/server.js",
-    "build": "DEPLOY=true next build",
-    "start": "next start -p ${PORT:-3000}",
+    "build": "next build",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint ."
   },
   "dependencies": {
